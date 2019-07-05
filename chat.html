@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Keyboard Racing</title>
+    <link rel="stylesheet" href="style.css">
     <script src="chat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
 </head>
 <body>
-    <div id="timer"></div>
+    Next game in <div id="timer"></div>
     <div id="game">
         <ul id="rating"></ul>
         <div id="trace"></div>
     </div>
+    Game end in<div id="game-timer"></div>
+
     <ul id="list"></ul>
     <textarea id="text" name="" id="" cols="30" rows="10"></textarea>
     <button id="btn">Send</button>

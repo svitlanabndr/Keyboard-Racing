@@ -40,24 +40,58 @@ app.post('/login', (req, res) => {
         res.status(401).json({ auth: false });
     }
 });
+const onlineUsers = [];
 
-let nextGameTimer = 20;
-setTimeout(function run() {
-    nextGameTimer --;
-    if (nextGameTimer >= 0) {
-        io.emit('timer', { countdown: nextGameTimer });
-        setTimeout(run, 1000);
+const gameTime = 20;
+const waitTime = 20;
+
+let timeToGame = waitTime;
+let timeToEndGame = gameTime;
+
+setTimeout(function timeOut() {
+    console.log("time to Game: "+timeToGame);
+    
+    if (timeToGame === 0) {
+        if (onlineUsers.length >= 1) {
+            console.log('gamers:', onlineUsers); //not unique users
+            io.emit('game', { gamers: onlineUsers }); // only for rooms
+            
+
+            setTimeout(function gameTimer() {
+                
+                console.log("time to EndGame: " + timeToEndGame);
+                if (timeToEndGame == 0) {
+                    timeToGame = waitTime;
+                    timeToEndGame = gameTime;
+                    setTimeout(timeOut, 1000);
+
+                } else {
+                    io.emit('timer', { countdown: timeToEndGame, div: '#game-timer' });
+                    setTimeout(gameTimer, 1000);
+                }
+                timeToEndGame--;
+            }, 1000);
+        } else {
+            console.log('no game :(');
+            timeToGame = waitTime;
+            setTimeout(timeOut, 1000);
+        }
+
     } else {
-        // начало игры
+        io.emit('timer', { countdown: timeToGame, div: '#timer' });
+        setTimeout(timeOut, 1000);
     }
-  }, 1000);
+    timeToGame--;
+}, 1000);
 
 io.on('connection', socket => {
 
     let currentUser;
-    socket.on('enrollToRace', payload =>{
+    socket.on('enrollToRace', payload => {
         currentUser = jwt.decode(payload.token).login;
+        onlineUsers.push(currentUser);
         console.log('i am connected', currentUser);
+        console.log('all users:', onlineUsers);
     });
     socket.on('submitMessage', payload => {
         const { token, message } = payload;
@@ -66,6 +100,10 @@ io.on('connection', socket => {
         socket.emit('newMessage', { message, user });
     });
     socket.on('disconnect', () => {
+        onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
         console.log('i am disconnected', currentUser);
+        console.log('all users:', onlineUsers);
+
     });
 });
+

@@ -1,0 +1,11 @@
+* {
+    color: green;
+}
+
+.current{
+    font-weight: bold;
+}
+
+.done{
+    text-decoration: underline;
+}
