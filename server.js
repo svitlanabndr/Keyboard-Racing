@@ -16,6 +16,8 @@ require('./passport.config.js');
 
 server.listen(3000);
 
+
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -39,11 +41,31 @@ app.post('/login', (req, res) => {
     }
 });
 
+let nextGameTimer = 20;
+setTimeout(function run() {
+    nextGameTimer --;
+    if (nextGameTimer >= 0) {
+        io.emit('timer', { countdown: nextGameTimer });
+        setTimeout(run, 1000);
+    } else {
+        // начало игры
+    }
+  }, 1000);
+
 io.on('connection', socket => {
+
+    let currentUser;
+    socket.on('enrollToRace', payload =>{
+        currentUser = jwt.decode(payload.token).login;
+        console.log('i am connected', currentUser);
+    });
     socket.on('submitMessage', payload => {
         const { token, message } = payload;
         const user = jwt.decode(token).login;
         socket.broadcast.emit('newMessage', { message, user });
         socket.emit('newMessage', { message, user });
+    });
+    socket.on('disconnect', () => {
+        console.log('i am disconnected', currentUser);
     });
 });

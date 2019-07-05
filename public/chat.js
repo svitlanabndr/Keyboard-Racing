@@ -10,6 +10,12 @@ window.onload = () => {
         const list = document.querySelector('#list');
 
         const socket = io.connect('http://localhost:3000');
+        socket.emit('enrollToRace', { token: jwt });
+
+        socket.on('timer', function (data) {
+            document.querySelector('#timer').innerHTML = ` Next game starts in ${data.countdown}`;
+        });
+        
 
         btn.addEventListener('click', event => {
             socket.emit('submitMessage', { message: text.value, token: jwt });
