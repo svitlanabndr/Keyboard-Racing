@@ -41,6 +41,7 @@ app.post('/login', (req, res) => {
     }
 });
 const onlineUsers = [];
+let invitedSockets = [];
 
 const gameTime = 20;
 const waitTime = 20;
@@ -49,24 +50,26 @@ let timeToGame = waitTime;
 let timeToEndGame = gameTime;
 
 setTimeout(function timeOut() {
-    console.log("time to Game: "+timeToGame);
+    // console.log("time to Game: "+timeToGame);
     
     if (timeToGame === 0) {
         if (onlineUsers.length >= 1) {
             console.log('gamers:', onlineUsers); //not unique users
-            io.emit('game', { gamers: onlineUsers }); // only for rooms
-            
 
+            invitedSockets.forEach(invitedSocket => {
+                invitedSocket.join('gameRoom');
+            });
+            io.to('gameRoom').emit('game', { gamers: onlineUsers }); // only for rooms
             setTimeout(function gameTimer() {
                 
-                console.log("time to EndGame: " + timeToEndGame);
+                // console.log("time to EndGame: " + timeToEndGame);
                 if (timeToEndGame == 0) {
                     timeToGame = waitTime;
                     timeToEndGame = gameTime;
                     setTimeout(timeOut, 1000);
 
                 } else {
-                    io.emit('timer', { countdown: timeToEndGame, div: '#game-timer' });
+                    io.emit('timerInGame', { countdown: timeToEndGame });
                     setTimeout(gameTimer, 1000);
                 }
                 timeToEndGame--;
@@ -78,13 +81,15 @@ setTimeout(function timeOut() {
         }
 
     } else {
-        io.emit('timer', { countdown: timeToGame, div: '#timer' });
+        io.emit('timerOutGame', { countdown: timeToGame });
         setTimeout(timeOut, 1000);
     }
     timeToGame--;
 }, 1000);
 
+let rating = [];
 io.on('connection', socket => {
+    invitedSockets.push(socket);
 
     let currentUser;
     socket.on('enrollToRace', payload => {
@@ -93,16 +98,27 @@ io.on('connection', socket => {
         console.log('i am connected', currentUser);
         console.log('all users:', onlineUsers);
     });
-    socket.on('submitMessage', payload => {
-        const { token, message } = payload;
-        const user = jwt.decode(token).login;
-        socket.broadcast.emit('newMessage', { message, user });
-        socket.emit('newMessage', { message, user });
+
+    socket.on('score', payload => {
+        let currentScore = payload.score;
+        let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
+        if (ratingItem) {
+            ratingItem.score = currentScore;
+        } else {
+            rating.push({ user: currentUser, score: currentScore });
+        }
+        socket.broadcast.to('gameRoom').emit('newRating', { rating });
+        socket.emit('newRating', { rating });
     });
+
     socket.on('disconnect', () => {
+        if (currentUser === undefined) {
+            return;
+        }
+        console.log('before', onlineUsers);
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
         console.log('i am disconnected', currentUser);
-        console.log('all users:', onlineUsers);
+        console.log('after:', onlineUsers);
 
     });
 });
