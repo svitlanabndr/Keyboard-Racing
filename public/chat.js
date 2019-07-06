@@ -37,6 +37,12 @@ window.onload = () => {
             });
         }
 
+        socket.on('clearTrace', () => {
+            trace.innerHTML = '';
+        });
+        socket.on('clearRating', () => {
+            ratingList.innerHTML = '';
+        });
 
         socket.on('game', payload => {
 
@@ -62,7 +68,6 @@ window.onload = () => {
 
                 if (counter === maxScore) {
                     console.log('win');
-                    trace.innerHTML = '';
                     return;
                 } else {
                     document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');

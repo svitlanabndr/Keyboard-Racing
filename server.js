@@ -74,10 +74,15 @@ setTimeout(function timeOut() {
             // reset gamers
             setTimeout(function gameTimer() {    
                 if (timeToEndGame == 0) {
-                    timeToGame = waitTime;
-                    timeToEndGame = gameTime;
-                    setTimeout(timeOut, 1000);
+                    io.to('gameRoom').emit('clearTrace');
 
+                    setTimeout(() => { 
+                        
+                        io.to('gameRoom').emit('clearRating');
+                        timeToGame = waitTime;
+                        timeToEndGame = gameTime;
+                        setTimeout(timeOut, 1000);
+                    }, 5000)
                 } else {
                     io.emit('timerInGame', { countdown: timeToEndGame });
                     setTimeout(gameTimer, 1000);
