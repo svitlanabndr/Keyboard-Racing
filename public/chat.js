@@ -5,8 +5,6 @@ window.onload = () => {
     if (!jwt) {
         location.replace('/login');
     } else {
-
-        const timer = document.querySelector('#timer');
         const trace = document.querySelector('#trace');
         const ratingList = document.querySelector('#rating');
         const timerIn = document.querySelector('#timerIn');
@@ -23,11 +21,12 @@ window.onload = () => {
             timerOut.innerHTML = payload.countdown;
         });
         
-        let keyboardHandler; 
+        let keyboardHandler = () => {}; 
         document.addEventListener('keypress', event => keyboardHandler(event));
 
         function createRatingList(array) {
             ratingList.innerHTML = '';
+
             array.forEach(gamer => {
                 const newLi = document.createElement('li');
                 newLi.innerHTML = gamer.user;
@@ -38,15 +37,11 @@ window.onload = () => {
             });
         }
 
+
         socket.on('game', payload => {
 
-            // display rating list
-            const startRating = []; 
-            const gamers = payload.gamers;
-            gamers.forEach(gamer => {
-                startRating.push({ user: gamer, score: 0 });
-            });
-            createRatingList(startRating);
+            const rating = payload.rating;
+            createRatingList(rating);
 
             //display trace
             let text = 'Love'
@@ -58,25 +53,31 @@ window.onload = () => {
 
             counter = 0;
             let currentLetter = text[counter];
+            const maxScore = text.length;
 
             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
 
             keyboardHandler = (event) => {
                 const pressedLetter = event.key;
-                if (pressedLetter === currentLetter) {
-                    document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('done');
-                    console.log(currentLetter, pressedLetter, true);
 
-                    counter++;
-// send on server
-                    socket.emit('score', { score: counter });
-                    document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
-                    currentLetter = text[counter];
+                if (counter === maxScore) {
+                    console.log('win');
+                    trace.innerHTML = '';
+                    return;
                 } else {
-                    console.log(currentLetter, pressedLetter, false);
+                    document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
+                    if (pressedLetter === currentLetter) {
+                        document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('done');
+                        console.log(currentLetter, pressedLetter, true);
+                        counter++;
+                        socket.emit('updateScore', { score: counter });
+                    } else {
+                        console.log(currentLetter, pressedLetter, false);
+                    }
+                    currentLetter = text[counter];
                 }
             };
-
+            // clearGame();
         });
 
         socket.on('newRating', payload => {

@@ -16,8 +16,6 @@ require('./passport.config.js');
 
 server.listen(3000);
 
-
-
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -42,6 +40,9 @@ app.post('/login', (req, res) => {
 });
 const onlineUsers = [];
 let invitedSockets = [];
+let rating = [];
+
+let gamers;
 
 const gameTime = 20;
 const waitTime = 20;
@@ -49,20 +50,29 @@ const waitTime = 20;
 let timeToGame = waitTime;
 let timeToEndGame = gameTime;
 
+function createStartRating(gamers) {
+    let startRating = [];
+    gamers.forEach(gamer => {
+        startRating.push({ user: gamer, score: 0 });
+    });
+    return startRating;
+}
+
 setTimeout(function timeOut() {
-    // console.log("time to Game: "+timeToGame);
     
     if (timeToGame === 0) {
         if (onlineUsers.length >= 1) {
-            console.log('gamers:', onlineUsers); //not unique users
+            console.log('gamers:', onlineUsers); 
 
             invitedSockets.forEach(invitedSocket => {
                 invitedSocket.join('gameRoom');
             });
-            io.to('gameRoom').emit('game', { gamers: onlineUsers }); // only for rooms
-            setTimeout(function gameTimer() {
-                
-                // console.log("time to EndGame: " + timeToEndGame);
+            gamers = onlineUsers;
+            rating = createStartRating(gamers);
+            
+            io.to('gameRoom').emit('game', { rating });
+            // reset gamers
+            setTimeout(function gameTimer() {    
                 if (timeToEndGame == 0) {
                     timeToGame = waitTime;
                     timeToEndGame = gameTime;
@@ -79,7 +89,6 @@ setTimeout(function timeOut() {
             timeToGame = waitTime;
             setTimeout(timeOut, 1000);
         }
-
     } else {
         io.emit('timerOutGame', { countdown: timeToGame });
         setTimeout(timeOut, 1000);
@@ -87,7 +96,10 @@ setTimeout(function timeOut() {
     timeToGame--;
 }, 1000);
 
-let rating = [];
+function sortRatingList(array) {
+    array.sort((a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0)); 
+}
+
 io.on('connection', socket => {
     invitedSockets.push(socket);
 
@@ -99,14 +111,13 @@ io.on('connection', socket => {
         console.log('all users:', onlineUsers);
     });
 
-    socket.on('score', payload => {
+    socket.on('updateScore', payload => {
         let currentScore = payload.score;
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
-        if (ratingItem) {
-            ratingItem.score = currentScore;
-        } else {
-            rating.push({ user: currentUser, score: currentScore });
-        }
+
+        ratingItem.score = currentScore;
+        sortRatingList(rating);
+
         socket.broadcast.to('gameRoom').emit('newRating', { rating });
         socket.emit('newRating', { rating });
     });
@@ -119,7 +130,6 @@ io.on('connection', socket => {
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
         console.log('i am disconnected', currentUser);
         console.log('after:', onlineUsers);
-
     });
 });
 
