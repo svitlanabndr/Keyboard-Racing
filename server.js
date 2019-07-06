@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const passport = require('passport');
 const bodyParser = require('body-parser');
 const users = require('./users.json');
+const traces = require('./traces.json');
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(passport.initialize());
@@ -38,15 +39,14 @@ app.post('/login', (req, res) => {
         res.status(401).json({ auth: false });
     }
 });
+
 const onlineUsers = [];
 let invitedSockets = [];
 let rating = [];
-
 let gamers;
 
 const gameTime = 200;
 const waitTime = 5;
-
 let timeToGame = waitTime;
 let timeToEndGame = gameTime;
 
@@ -57,7 +57,9 @@ function createStartRating(gamers) {
     });
     return startRating;
 }
-
+function chooseTrace() {
+    return traces[Math.floor(Math.random() * traces.length)].text;  
+}
 setTimeout(function timeOut() {
     
     if (timeToGame === 0) {
@@ -70,14 +72,13 @@ setTimeout(function timeOut() {
             gamers = onlineUsers;
             rating = createStartRating(gamers);
             
+            io.to('gameRoom').emit('getTrace', { text: chooseTrace() });
             io.to('gameRoom').emit('game', { rating });
             // reset gamers
             setTimeout(function gameTimer() {    
                 if (timeToEndGame == 0) {
                     io.to('gameRoom').emit('clearTrace');
-
                     setTimeout(() => { 
-                        
                         io.to('gameRoom').emit('clearRating');
                         timeToGame = waitTime;
                         timeToEndGame = gameTime;
@@ -107,8 +108,8 @@ function sortRatingList(array) {
 
 io.on('connection', socket => {
     invitedSockets.push(socket);
-
     let currentUser;
+
     socket.on('enrollToRace', payload => {
         currentUser = jwt.decode(payload.token).login;
         onlineUsers.push(currentUser);
@@ -140,9 +141,7 @@ io.on('connection', socket => {
     });
 
     socket.on('disconnect', () => {
-        if (currentUser === undefined) {
-            return;
-        }
+        if (currentUser === undefined) return;
         console.log('before', onlineUsers);
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
         console.log('i am disconnected', currentUser);

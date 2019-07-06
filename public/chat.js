@@ -10,9 +10,14 @@ window.onload = () => {
         const winnersList = document.querySelector('#winners');
         const timerIn = document.querySelector('#timerIn');
         const timerOut = document.querySelector('#timerOut');
+        let text;
+
 
         const socket = io.connect('http://localhost:3000');
         socket.emit('enrollToRace', { token: jwt });
+
+        let keyboardHandler = () => {}; 
+        document.addEventListener('keypress', event => keyboardHandler(event));
 
         socket.on('timerInGame', payload => {
             timerIn.innerHTML = payload.countdown;
@@ -21,9 +26,20 @@ window.onload = () => {
         socket.on('timerOutGame', payload => {
             timerOut.innerHTML = payload.countdown;
         });
-        
-        let keyboardHandler = () => {}; 
-        document.addEventListener('keypress', event => keyboardHandler(event));
+
+        socket.on('clearTrace', () => {
+            trace.innerHTML = '';
+        });
+
+        socket.on('clearRating', () => {
+            ratingList.innerHTML = '';
+        });
+
+        socket.on('addWinner', payload => {
+            const newWinner = document.createElement('li');
+            newWinner.innerHTML = payload.user;
+            winnersList.appendChild(newWinner);
+        });
 
         function createRatingList(array) {
             ratingList.innerHTML = '';
@@ -46,36 +62,28 @@ window.onload = () => {
             });
         }
 
-        socket.on('clearTrace', () => {
-            trace.innerHTML = '';
-        });
-        socket.on('clearRating', () => {
-            ratingList.innerHTML = '';
-        });
-        socket.on('addWinner', payload => {
-            // showWinner(payload.user);
-            const newWinner = document.createElement('li');
-            newWinner.innerHTML = payload.user;
-            winnersList.appendChild(newWinner);
-
+        socket.on('getTrace', payload => {
+            text = payload.text;
         });
 
         socket.on('game', payload => {
 
+            let counter = 0;
+            let currentLetter = text[counter];
+            const maxScore = text.length;
             const rating = payload.rating;
+
             createRatingList(rating);
 
             //display trace
-            let text = 'Love'
+            
             text.split('').forEach(char => {
                 const newSpan = document.createElement('span');
                 newSpan.innerText = char;
                 trace.appendChild(newSpan);
             });
 
-            counter = 0;
-            let currentLetter = text[counter];
-            const maxScore = text.length;
+ 
 
             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
 
