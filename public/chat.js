@@ -34,13 +34,12 @@ window.onload = () => {
         });
 
         socket.on('addWinner', payload => {
-            const newWinner = document.createElement('li');
-            newWinner.innerHTML = payload.user;
-            winnersList.appendChild(newWinner);
+            createRatingList(payload.rating, winnersList);
+            winnersList.classList.add('winners');
         });
 
         socket.on('newRating', payload => {
-            createRatingList(payload.rating);
+            createRatingList(payload.rating, ratingList);
         });
         
         socket.on('getTrace', payload => {
@@ -48,13 +47,13 @@ window.onload = () => {
         });
 
         socket.on('game', payload => {
-
+            
             let counter = 0;
             let currentLetter = text[counter];
             const maxScore = text.length;
             const rating = payload.rating;
 
-            createRatingList(rating);
+            createRatingList(rating, ratingList);
 
             displayTrace(text);
 
@@ -69,6 +68,7 @@ window.onload = () => {
                         socket.emit('updateScore', { score: counter });
                         if (counter === maxScore) {
                             console.log('win');
+                            
                             socket.emit('gameFinish');
                             keyboardHandler = () => {}; 
                         } else {
@@ -90,8 +90,9 @@ window.onload = () => {
             });
         }
 
-        function createRatingList(array) {
-            ratingList.innerHTML = '';
+        function createRatingList(array, list) {
+            // console.log(array, list);
+            list.innerHTML = '';
 
             array.forEach(gamer => {
                 const newLi = document.createElement('li');
@@ -107,7 +108,7 @@ window.onload = () => {
                 newLi.appendChild(name);
                 newLi.appendChild(score);
 
-                ratingList.appendChild(newLi);
+                list.appendChild(newLi);
             });
         }
 

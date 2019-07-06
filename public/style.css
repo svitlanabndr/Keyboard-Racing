@@ -1,9 +1,16 @@
 
-.current,
-.winner{
+.current{
     font-weight: bold;
 }
 
 .done{
     text-decoration: underline;
+}
+
+.winners {
+    font-weight: bold;
+}
+
+.winners .score {
+    color: red;
 }

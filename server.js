@@ -44,7 +44,7 @@ const onlineUsers = [];
 let invitedSockets = [];
 let rating = [];
 let gamers;
-
+let gameStartTime;
 const gameTime = 200;
 const waitTime = 5;
 let timeToGame = waitTime;
@@ -73,6 +73,7 @@ setTimeout(function timeOut() {
             rating = createStartRating(gamers);
             
             io.to('gameRoom').emit('getTrace', { text: chooseTrace() });
+            gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
             // reset gamers
             setTimeout(function gameTimer() {    
@@ -105,7 +106,7 @@ setTimeout(function timeOut() {
 function sortRatingList(array) {
     array.sort((a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0)); 
 }
-
+let ratingWinners = [];
 io.on('connection', socket => {
     invitedSockets.push(socket);
     let currentUser;
@@ -127,17 +128,23 @@ io.on('connection', socket => {
         socket.broadcast.to('gameRoom').emit('newRating', { rating });
         socket.emit('newRating', { rating });
     });
-
+    
     socket.on('gameFinish', () => {
-        console.log(rating);
+        let gameFinishTime = new Date().getTime();
+        let gameDuration = Math.floor((gameFinishTime - gameStartTime) / 1000);
+
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
         rating.splice( rating.indexOf(ratingItem), 1 );
-        console.log(rating);
+
         socket.broadcast.to('gameRoom').emit('newRating', { rating });
         socket.emit('newRating', { rating });
 
-        socket.broadcast.to('gameRoom').emit('addWinner', { user: currentUser });
-        socket.emit('addWinner', { user: currentUser });
+        console.log('winners before', ratingWinners);
+        ratingWinners.push({ user: currentUser, score: gameDuration });
+        console.log('winners after', ratingWinners);
+
+        socket.broadcast.to('gameRoom').emit('addWinner', { rating: ratingWinners });
+        socket.emit('addWinner', { rating: ratingWinners });
     });
 
     socket.on('disconnect', () => {
