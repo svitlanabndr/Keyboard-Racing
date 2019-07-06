@@ -7,6 +7,7 @@ window.onload = () => {
     } else {
         const trace = document.querySelector('#trace');
         const ratingList = document.querySelector('#rating');
+        const winnersList = document.querySelector('#winners');
         const timerIn = document.querySelector('#timerIn');
         const timerOut = document.querySelector('#timerOut');
 
@@ -29,11 +30,19 @@ window.onload = () => {
 
             array.forEach(gamer => {
                 const newLi = document.createElement('li');
-                newLi.innerHTML = gamer.user;
-                ratingList.appendChild(newLi);
+
+                const name = document.createElement('span');
+                name.classList.add('name');
+                name.innerHTML = gamer.user;
+                
                 const score = document.createElement('span');
+                score.classList.add('score');
                 score.innerHTML = gamer.score;
+
+                newLi.appendChild(name);
                 newLi.appendChild(score);
+
+                ratingList.appendChild(newLi);
             });
         }
 
@@ -42,6 +51,13 @@ window.onload = () => {
         });
         socket.on('clearRating', () => {
             ratingList.innerHTML = '';
+        });
+        socket.on('addWinner', payload => {
+            // showWinner(payload.user);
+            const newWinner = document.createElement('li');
+            newWinner.innerHTML = payload.user;
+            winnersList.appendChild(newWinner);
+
         });
 
         socket.on('game', payload => {
@@ -66,21 +82,26 @@ window.onload = () => {
             keyboardHandler = (event) => {
                 const pressedLetter = event.key;
 
-                if (counter === maxScore) {
-                    console.log('win');
-                    return;
-                } else {
-                    document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
                     if (pressedLetter === currentLetter) {
                         document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('done');
                         console.log(currentLetter, pressedLetter, true);
                         counter++;
+
                         socket.emit('updateScore', { score: counter });
+                        if (counter === maxScore) {
+                            console.log('win');
+                            socket.emit('gameFinish');
+                            keyboardHandler = () => {}; 
+                        }
+                        else {
+                            document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
+                        }
+
                     } else {
                         console.log(currentLetter, pressedLetter, false);
                     }
                     currentLetter = text[counter];
-                }
+                
             };
             // clearGame();
         });

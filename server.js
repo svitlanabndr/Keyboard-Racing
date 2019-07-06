@@ -44,8 +44,8 @@ let rating = [];
 
 let gamers;
 
-const gameTime = 20;
-const waitTime = 20;
+const gameTime = 200;
+const waitTime = 5;
 
 let timeToGame = waitTime;
 let timeToEndGame = gameTime;
@@ -125,6 +125,18 @@ io.on('connection', socket => {
 
         socket.broadcast.to('gameRoom').emit('newRating', { rating });
         socket.emit('newRating', { rating });
+    });
+
+    socket.on('gameFinish', () => {
+        console.log(rating);
+        let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
+        rating.splice( rating.indexOf(ratingItem), 1 );
+        console.log(rating);
+        socket.broadcast.to('gameRoom').emit('newRating', { rating });
+        socket.emit('newRating', { rating });
+
+        socket.broadcast.to('gameRoom').emit('addWinner', { user: currentUser });
+        socket.emit('addWinner', { user: currentUser });
     });
 
     socket.on('disconnect', () => {

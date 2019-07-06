@@ -1,8 +1,6 @@
-* {
-    color: green;
-}
 
-.current{
+.current,
+.winner{
     font-weight: bold;
 }
 
