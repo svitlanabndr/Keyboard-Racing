@@ -1,5 +1,4 @@
 window.onload = () => {
-
     const jwt = localStorage.getItem('jwt');
 
     if (!jwt) {
@@ -11,7 +10,6 @@ window.onload = () => {
         const timerIn = document.querySelector('#timerIn');
         const timerOut = document.querySelector('#timerOut');
         let text;
-
 
         const socket = io.connect('http://localhost:3000');
         socket.emit('enrollToRace', { token: jwt });
@@ -41,6 +39,57 @@ window.onload = () => {
             winnersList.appendChild(newWinner);
         });
 
+        socket.on('newRating', payload => {
+            createRatingList(payload.rating);
+        });
+        
+        socket.on('getTrace', payload => {
+            text = payload.text;
+        });
+
+        socket.on('game', payload => {
+
+            let counter = 0;
+            let currentLetter = text[counter];
+            const maxScore = text.length;
+            const rating = payload.rating;
+
+            createRatingList(rating);
+
+            displayTrace(text);
+
+            document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
+
+            keyboardHandler = (event) => {
+                const pressedLetter = event.key;
+                    if (pressedLetter === currentLetter) {
+                        document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('done');
+                        console.log(currentLetter, pressedLetter, true);
+                        counter++;
+                        socket.emit('updateScore', { score: counter });
+                        if (counter === maxScore) {
+                            console.log('win');
+                            socket.emit('gameFinish');
+                            keyboardHandler = () => {}; 
+                        } else {
+                            document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
+                        }
+                    } else {
+                        console.log(currentLetter, pressedLetter, false);
+                    }
+                    currentLetter = text[counter];
+            };
+            // clearGame();
+        });
+
+        function displayTrace(text) {
+            text.split('').forEach(char => {
+                const newSpan = document.createElement('span');
+                newSpan.innerText = char;
+                trace.appendChild(newSpan);
+            });
+        }
+
         function createRatingList(array) {
             ratingList.innerHTML = '';
 
@@ -61,62 +110,6 @@ window.onload = () => {
                 ratingList.appendChild(newLi);
             });
         }
-
-        socket.on('getTrace', payload => {
-            text = payload.text;
-        });
-
-        socket.on('game', payload => {
-
-            let counter = 0;
-            let currentLetter = text[counter];
-            const maxScore = text.length;
-            const rating = payload.rating;
-
-            createRatingList(rating);
-
-            //display trace
-            
-            text.split('').forEach(char => {
-                const newSpan = document.createElement('span');
-                newSpan.innerText = char;
-                trace.appendChild(newSpan);
-            });
-
- 
-
-            document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
-
-            keyboardHandler = (event) => {
-                const pressedLetter = event.key;
-
-                    if (pressedLetter === currentLetter) {
-                        document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('done');
-                        console.log(currentLetter, pressedLetter, true);
-                        counter++;
-
-                        socket.emit('updateScore', { score: counter });
-                        if (counter === maxScore) {
-                            console.log('win');
-                            socket.emit('gameFinish');
-                            keyboardHandler = () => {}; 
-                        }
-                        else {
-                            document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
-                        }
-
-                    } else {
-                        console.log(currentLetter, pressedLetter, false);
-                    }
-                    currentLetter = text[counter];
-                
-            };
-            // clearGame();
-        });
-
-        socket.on('newRating', payload => {
-            createRatingList(payload.rating);
-        });
 
     }
 };
