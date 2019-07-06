@@ -44,6 +44,7 @@ const onlineUsers = [];
 let invitedSockets = [];
 let rating = [];
 let ratingWinners = [];
+let isEndGame = false;
 
 let gamers;
 let gameStartTime;
@@ -66,6 +67,7 @@ function reset() {
     invitedSockets.forEach(invitedSocket => {
         invitedSocket.leave('gameRoom');
     });
+    isEndGame = false;
     gamers = [];
     rating = [];
     ratingWinners = [];
@@ -87,17 +89,17 @@ setTimeout(function timeOut() {
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
             setTimeout(function gameTimer() {    
-                if (timeToEndGame == 0) {
+                if (timeToEndGame == 0 || isEndGame) {
                     io.to('gameRoom').emit('clearTrace');
                     setTimeout(() => { 
                         io.to('gameRoom').emit('clearRating');
                         timeToGame = waitTime;
                         timeToEndGame = gameTime;
-                        // setTimeout(reset, 10);
                         reset();
                         setTimeout(timeOut, 1000);
                     }, 5000)
                 } else {
+
                     io.emit('timerInGame', { countdown: timeToEndGame });
                     setTimeout(gameTimer, 1000);
                 }
@@ -149,6 +151,9 @@ io.on('connection', socket => {
 
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
         rating.splice( rating.indexOf(ratingItem), 1 );
+        if (rating.length < 1) {
+            isEndGame = true;
+        }
 
         socket.broadcast.to('gameRoom').emit('newRating', { rating });
         socket.emit('newRating', { rating });
