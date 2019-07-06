@@ -19,6 +19,9 @@ window.onload = () => {
 
         socket.on('timerInGame', payload => {
             timerIn.innerHTML = payload.countdown;
+            if (payload.countdown === 1) {
+                keyboardHandler = () => {};
+            }
         });
 
         socket.on('timerOutGame', payload => {
@@ -31,6 +34,7 @@ window.onload = () => {
 
         socket.on('clearRating', () => {
             ratingList.innerHTML = '';
+            winnersList.innerHTML = '';
         });
 
         socket.on('addWinner', payload => {
@@ -79,7 +83,6 @@ window.onload = () => {
                     }
                     currentLetter = text[counter];
             };
-            // clearGame();
         });
 
         function displayTrace(text) {

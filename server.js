@@ -43,10 +43,12 @@ app.post('/login', (req, res) => {
 const onlineUsers = [];
 let invitedSockets = [];
 let rating = [];
+let ratingWinners = [];
+
 let gamers;
 let gameStartTime;
-const gameTime = 200;
-const waitTime = 5;
+const gameTime = 20;
+const waitTime = 20;
 let timeToGame = waitTime;
 let timeToEndGame = gameTime;
 
@@ -60,6 +62,14 @@ function createStartRating(gamers) {
 function chooseTrace() {
     return traces[Math.floor(Math.random() * traces.length)].text;  
 }
+function reset() {
+    invitedSockets.forEach(invitedSocket => {
+        invitedSocket.leave('gameRoom');
+    });
+    gamers = [];
+    rating = [];
+    ratingWinners = [];
+}
 setTimeout(function timeOut() {
     
     if (timeToGame === 0) {
@@ -69,13 +79,13 @@ setTimeout(function timeOut() {
             invitedSockets.forEach(invitedSocket => {
                 invitedSocket.join('gameRoom');
             });
+           
             gamers = onlineUsers;
             rating = createStartRating(gamers);
             
             io.to('gameRoom').emit('getTrace', { text: chooseTrace() });
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
-            // reset gamers
             setTimeout(function gameTimer() {    
                 if (timeToEndGame == 0) {
                     io.to('gameRoom').emit('clearTrace');
@@ -83,6 +93,8 @@ setTimeout(function timeOut() {
                         io.to('gameRoom').emit('clearRating');
                         timeToGame = waitTime;
                         timeToEndGame = gameTime;
+                        // setTimeout(reset, 10);
+                        reset();
                         setTimeout(timeOut, 1000);
                     }, 5000)
                 } else {
@@ -104,12 +116,12 @@ setTimeout(function timeOut() {
 }, 1000);
 
 function sortRatingList(array, mode = 'asc') {
-    console.log(mode);
+    let compare;
     mode === 'desc'? 
-        array.sort((a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0)) 
-        : array.sort((a,b) => (a.score > b.score) ? 1 : ((b.score > a.score) ? -1 : 0)); 
+        compare = (a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0) : 
+        compare = (a,b) => (a.score > b.score) ? 1 : ((b.score > a.score) ? -1 : 0); 
+    array.sort(compare);
 }
-let ratingWinners = [];
 io.on('connection', socket => {
     invitedSockets.push(socket);
     let currentUser;
@@ -124,8 +136,7 @@ io.on('connection', socket => {
     socket.on('updateScore', payload => {
         let currentScore = payload.score;
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
-
-        ratingItem.score = currentScore;
+        if (ratingItem) ratingItem.score = currentScore;
         sortRatingList(rating, 'desc');
 
         socket.broadcast.to('gameRoom').emit('newRating', { rating });
