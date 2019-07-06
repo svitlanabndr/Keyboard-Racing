@@ -103,8 +103,11 @@ setTimeout(function timeOut() {
     timeToGame--;
 }, 1000);
 
-function sortRatingList(array) {
-    array.sort((a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0)); 
+function sortRatingList(array, mode = 'asc') {
+    console.log(mode);
+    mode === 'desc'? 
+        array.sort((a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0)) 
+        : array.sort((a,b) => (a.score > b.score) ? 1 : ((b.score > a.score) ? -1 : 0)); 
 }
 let ratingWinners = [];
 io.on('connection', socket => {
@@ -123,7 +126,7 @@ io.on('connection', socket => {
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
 
         ratingItem.score = currentScore;
-        sortRatingList(rating);
+        sortRatingList(rating, 'desc');
 
         socket.broadcast.to('gameRoom').emit('newRating', { rating });
         socket.emit('newRating', { rating });
@@ -142,7 +145,7 @@ io.on('connection', socket => {
         console.log('winners before', ratingWinners);
         ratingWinners.push({ user: currentUser, score: gameDuration });
         console.log('winners after', ratingWinners);
-
+        sortRatingList(ratingWinners);
         socket.broadcast.to('gameRoom').emit('addWinner', { rating: ratingWinners });
         socket.emit('addWinner', { rating: ratingWinners });
     });
