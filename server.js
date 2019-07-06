@@ -44,6 +44,7 @@ const onlineUsers = [];
 let invitedSockets = [];
 let rating = [];
 let ratingWinners = [];
+let ratingDisconnected = [];
 let isEndGame = false;
 
 let gamers;
@@ -71,6 +72,7 @@ function reset() {
     gamers = [];
     rating = [];
     ratingWinners = [];
+    ratingDisconnected = [];
 }
 setTimeout(function timeOut() {
     
@@ -90,6 +92,8 @@ setTimeout(function timeOut() {
             io.to('gameRoom').emit('game', { rating });
             setTimeout(function gameTimer() {    
                 if (timeToEndGame == 0 || isEndGame) {
+                    console.log('endgame :(')
+                    // hide timerInGame
                     io.to('gameRoom').emit('clearTrace');
                     setTimeout(() => { 
                         io.to('gameRoom').emit('clearRating');
@@ -124,6 +128,24 @@ function sortRatingList(array, mode = 'asc') {
         compare = (a,b) => (a.score > b.score) ? 1 : ((b.score > a.score) ? -1 : 0); 
     array.sort(compare);
 }
+
+function deleteUserFromRating(user, rating) {
+    let ratingItem = rating.find(ratingItem => ratingItem.user === user);
+    if (ratingItem) rating.splice( rating.indexOf(ratingItem), 1 );
+}
+
+function updateRating(socket) {
+    socket.broadcast.to('gameRoom').emit('newRating', { rating });
+        socket.emit('newRating', { rating });
+}
+function updateWinnersRating(socket) {
+    socket.broadcast.to('gameRoom').emit('newWinnersRating', { rating: ratingWinners });
+    socket.emit('newWinnersRating', { rating: ratingWinners });
+}
+function updateDisconnectedRating(socket) {
+    socket.broadcast.to('gameRoom').emit('newDisconnectedRating', { rating: ratingDisconnected });
+}
+
 io.on('connection', socket => {
     invitedSockets.push(socket);
     let currentUser;
@@ -141,35 +163,49 @@ io.on('connection', socket => {
         if (ratingItem) ratingItem.score = currentScore;
         sortRatingList(rating, 'desc');
 
-        socket.broadcast.to('gameRoom').emit('newRating', { rating });
-        socket.emit('newRating', { rating });
+        updateRating(socket)
     });
     
     socket.on('gameFinish', () => {
         let gameFinishTime = new Date().getTime();
         let gameDuration = Math.floor((gameFinishTime - gameStartTime) / 1000);
 
-        let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
-        rating.splice( rating.indexOf(ratingItem), 1 );
+        deleteUserFromRating(currentUser, rating);
+
         if (rating.length < 1) {
             isEndGame = true;
         }
 
-        socket.broadcast.to('gameRoom').emit('newRating', { rating });
-        socket.emit('newRating', { rating });
+        updateRating(socket);
 
         console.log('winners before', ratingWinners);
         ratingWinners.push({ user: currentUser, score: gameDuration });
         console.log('winners after', ratingWinners);
         sortRatingList(ratingWinners);
-        socket.broadcast.to('gameRoom').emit('addWinner', { rating: ratingWinners });
-        socket.emit('addWinner', { rating: ratingWinners });
+
+        updateWinnersRating(socket);
+ 
     });
 
     socket.on('disconnect', () => {
         if (currentUser === undefined) return;
         console.log('before', onlineUsers);
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
+        if (onlineUsers.length < 1) {
+            isEndGame = true;
+        }
+
+        deleteUserFromRating(currentUser, rating);
+        deleteUserFromRating(currentUser, ratingWinners);
+
+        updateRating(socket);
+        updateWinnersRating(socket);
+
+        ratingDisconnected.push({ user: currentUser });
+
+        updateDisconnectedRating(socket);
+
+        console.log(rating, ratingDisconnected);
         console.log('i am disconnected', currentUser);
         console.log('after:', onlineUsers);
     });

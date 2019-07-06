@@ -7,6 +7,7 @@ window.onload = () => {
         const trace = document.querySelector('#trace');
         const ratingList = document.querySelector('#rating');
         const winnersList = document.querySelector('#winners');
+        const disconnectedList = document.querySelector('#disconnected');
         const timerIn = document.querySelector('#timerIn');
         const timerOut = document.querySelector('#timerOut');
         let text;
@@ -35,9 +36,15 @@ window.onload = () => {
         socket.on('clearRating', () => {
             ratingList.innerHTML = '';
             winnersList.innerHTML = '';
+            disconnectedList.innerHTML = '';
         });
 
-        socket.on('addWinner', payload => {
+        socket.on('newDisconnectedRating', payload => {
+            createRatingList(payload.rating, disconnectedList);
+            disconnectedList.classList.add('disconnected');
+        });
+
+        socket.on('newWinnersRating', payload => {
             createRatingList(payload.rating, winnersList);
             winnersList.classList.add('winners');
         });
@@ -94,7 +101,6 @@ window.onload = () => {
         }
 
         function createRatingList(array, list) {
-            // console.log(array, list);
             list.innerHTML = '';
 
             array.forEach(gamer => {
@@ -103,14 +109,13 @@ window.onload = () => {
                 const name = document.createElement('span');
                 name.classList.add('name');
                 name.innerHTML = gamer.user;
-                
-                const score = document.createElement('span');
-                score.classList.add('score');
-                score.innerHTML = gamer.score;
-
                 newLi.appendChild(name);
-                newLi.appendChild(score);
-
+                if (gamer.score || gamer.score === 0) {
+                    const score = document.createElement('span');
+                    score.classList.add('score');
+                    score.innerHTML = gamer.score;
+                    newLi.appendChild(score);
+                }
                 list.appendChild(newLi);
             });
         }

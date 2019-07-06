@@ -14,3 +14,7 @@
 .winners .score {
     color: red;
 }
+
+.disconnected {
+    color: gray;
+}
