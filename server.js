@@ -89,7 +89,6 @@ setTimeout(function timeOut() {
             setTimeout(function gameTimer() {    
                 if (timeToEndGame == 0 || isEndGame) {
                     console.log('endgame :(')
-                    // hide timerInGame
                     io.to('gameRoom').emit('clearTrace');
                     setTimeout(() => { 
                         io.to('gameRoom').emit('clearRating');
@@ -99,7 +98,6 @@ setTimeout(function timeOut() {
                         setTimeout(timeOut, 1000);
                     }, 5000)
                 } else {
-
                     io.emit('timerInGame', { countdown: timeToEndGame });
                     setTimeout(gameTimer, 1000);
                 }
@@ -112,11 +110,9 @@ setTimeout(function timeOut() {
         }
     } else  {
         if (timeToGame === 5) {
-            
             text = chooseTrace();
             if (onlineUsers.length >= 1) io.emit('getTrace', { text });
         }
-
         io.emit('timerOutGame', { countdown: timeToGame });
         setTimeout(timeOut, 1000);
     }
