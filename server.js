@@ -49,7 +49,7 @@ let isEndGame = false;
 let text;
 let gamers = [];
 let gameStartTime;
-const gameTime = 20;
+const gameTime = 40;
 const waitTime = 20;
 let timeToGame = waitTime;
 let timeToEndGame = gameTime;
