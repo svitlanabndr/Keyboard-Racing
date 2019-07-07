@@ -10,6 +10,8 @@ window.onload = () => {
         const disconnectedList = document.querySelector('#disconnected');
         const timerIn = document.querySelector('#timerIn');
         const timerOut = document.querySelector('#timerOut');
+        const timerOutDiv = document.querySelector('.wrp-timer-out');
+        const timerInDiv = document.querySelector('.wrp-timer-in');
         let text;
 
         const socket = io.connect('http://localhost:3000');
@@ -19,6 +21,9 @@ window.onload = () => {
         document.addEventListener('keypress', event => keyboardHandler(event));
 
         socket.on('timerInGame', payload => {
+            timerOutDiv.classList.add('hidden-timer');
+            timerInDiv.classList.remove('hidden-timer');
+
             timerIn.innerHTML = payload.countdown;
             if (payload.countdown === 1) {
                 keyboardHandler = () => {};
@@ -26,6 +31,8 @@ window.onload = () => {
         });
 
         socket.on('timerOutGame', payload => {
+            timerInDiv.classList.add('hidden-timer');
+            timerOutDiv.classList.remove('hidden-timer');
             timerOut.innerHTML = payload.countdown;
         });
 
@@ -59,7 +66,6 @@ window.onload = () => {
         });
 
         socket.on('game', payload => {
-            
             let counter = 0;
             let currentLetter = text[counter];
             const maxScore = text.length;
@@ -92,6 +98,7 @@ window.onload = () => {
         });
 
         function displayTrace(text) {
+            trace.innerHTML ='';
             text.split('').forEach(char => {
                 const newSpan = document.createElement('span');
                 newSpan.innerText = char;

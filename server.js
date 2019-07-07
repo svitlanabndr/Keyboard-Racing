@@ -46,7 +46,7 @@ let rating = [];
 let ratingWinners = [];
 let ratingDisconnected = [];
 let isEndGame = false;
-
+let text;
 let gamers = [];
 let gameStartTime;
 const gameTime = 20;
@@ -78,10 +78,12 @@ setTimeout(function timeOut() {
     
     if (timeToGame === 0) {
         if (onlineUsers.length >= 1) {
-            console.log('gamers:', onlineUsers); 
-            gamers = onlineUsers;
+            console.log('Game start gamers:', onlineUsers); 
+            gamers = [...onlineUsers];
             rating = createStartRating(gamers);
-            
+            invitedSockets.forEach(invitedSocket => {
+                invitedSocket.join('gameRoom');
+            });
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
             setTimeout(function gameTimer() {    
@@ -110,10 +112,9 @@ setTimeout(function timeOut() {
         }
     } else  {
         if (timeToGame === 5) {
-            invitedSockets.forEach(invitedSocket => {
-                invitedSocket.join('gameRoom');
-            });
-            io.to('gameRoom').emit('getTrace', { text: chooseTrace() });
+            
+            text = chooseTrace();
+            if (onlineUsers.length >= 1) io.emit('getTrace', { text });
         }
 
         io.emit('timerOutGame', { countdown: timeToGame });
@@ -157,7 +158,12 @@ io.on('connection', socket => {
             currentUser = verified.login;
             onlineUsers.push(currentUser);
             console.log('i am connected', currentUser);
-            console.log('all users:', onlineUsers);
+            console.log('online users:', onlineUsers);
+            console.log('gamers:', gamers);
+            if (timeToGame <= 5 && timeToGame >= 0) {
+                socket.emit('getTrace', { text });
+                socket.join('gameRoom');
+            }
         }
     });
 
@@ -193,19 +199,23 @@ io.on('connection', socket => {
 
     socket.on('disconnect', () => {
         if (currentUser === undefined) return;
-        console.log('before', onlineUsers);
         console.log('i am disconnected', currentUser);
-
+        console.log('online users', onlineUsers);
+        console.log('gamers', gamers);
+   
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
-
+        
         if (!gamers.includes(currentUser)) {
             return;
-        } 
-        gamers = onlineUsers;
+        }
+        gamers.splice( onlineUsers.indexOf(currentUser), 1 );
+
         if (gamers.length < 1) {
             isEndGame = true;
+            return;
         }
 
+        console.log('я дошел сюда'); 
         deleteUserFromRating(currentUser, rating);
         deleteUserFromRating(currentUser, ratingWinners);
 
@@ -215,8 +225,6 @@ io.on('connection', socket => {
         ratingDisconnected.push({ user: currentUser });
 
         updateDisconnectedRating(socket);
-
-        console.log('after:', onlineUsers);
     });
 });
 

@@ -1,3 +1,47 @@
+.wrp-timer-out,
+.wrp-timer-in {
+    margin: 100px auto;
+    width: 50%;
+    height: 20%;
+    background-color: #ccc;
+    border-radius: 3px;
+    font-size: 2em;
+    text-align: center;
+}
+
+.wrp-trace {
+    margin: 100px auto;
+    width: 50%;
+    height: 20%;
+    background-color: orange;
+    border-radius: 3px;
+    font-size: 2em;
+    text-align: center;
+}
+ul,
+ol {
+    padding: 0;
+    margin: 100px auto;
+    width: 50%;
+    height: 20%;
+    background-color: lightcoral;
+    border-radius: 3px;
+    font-size: 2em;
+    text-align: center;
+}
+
+ul {
+    list-style: none;
+
+}
+
+.hidden-timer {
+    display: none;
+}
+
+.hidden {
+    visibility: hidden;
+}
 
 .current{
     font-weight: bold;

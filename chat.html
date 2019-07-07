@@ -10,14 +10,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
 </head>
 <body>
-    Next game in <div id="timerOut"></div>
-    <div id="game">
-        <ul id="winners"></ul>
-        <ul id="rating"></ul>
-        <ul id="disconnected"></ul>
-        <div id="trace"></div>
+    <div class="wrp-timer-out hidden-timer">
+        Next game starts in <span id="timerOut">20</span> sec
+    </div> 
+    <div class="wrp-timer-in hidden-timer">
+        Current game ends in <span id="timerIn">20</span> sec
     </div>
-    Game end in<div id="timerIn"></div>
+    <div id="game">
+        
+        <div class="wrp-trace">
+            <div id="trace"></div>
+        </div> 
+        
+        <ol id="winners"></ol>
+        <ol id="rating"></ol>
+        <ul id="disconnected"></ul>
+    </div>
+    
 
 </body>
 </html>
