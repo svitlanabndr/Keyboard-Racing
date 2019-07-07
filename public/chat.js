@@ -55,6 +55,7 @@ window.onload = () => {
         
         socket.on('getTrace', payload => {
             text = payload.text;
+            displayTrace(text);
         });
 
         socket.on('game', payload => {
@@ -66,7 +67,7 @@ window.onload = () => {
 
             createRatingList(rating, ratingList);
 
-            displayTrace(text);
+            
 
             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
 

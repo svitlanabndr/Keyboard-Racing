@@ -47,7 +47,7 @@ let ratingWinners = [];
 let ratingDisconnected = [];
 let isEndGame = false;
 
-let gamers;
+let gamers = [];
 let gameStartTime;
 const gameTime = 20;
 const waitTime = 20;
@@ -79,15 +79,9 @@ setTimeout(function timeOut() {
     if (timeToGame === 0) {
         if (onlineUsers.length >= 1) {
             console.log('gamers:', onlineUsers); 
-
-            invitedSockets.forEach(invitedSocket => {
-                invitedSocket.join('gameRoom');
-            });
-           
             gamers = onlineUsers;
             rating = createStartRating(gamers);
             
-            io.to('gameRoom').emit('getTrace', { text: chooseTrace() });
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
             setTimeout(function gameTimer() {    
@@ -114,7 +108,14 @@ setTimeout(function timeOut() {
             timeToGame = waitTime;
             setTimeout(timeOut, 1000);
         }
-    } else {
+    } else  {
+        if (timeToGame === 5) {
+            invitedSockets.forEach(invitedSocket => {
+                invitedSocket.join('gameRoom');
+            });
+            io.to('gameRoom').emit('getTrace', { text: chooseTrace() });
+        }
+
         io.emit('timerOutGame', { countdown: timeToGame });
         setTimeout(timeOut, 1000);
     }
@@ -190,8 +191,15 @@ io.on('connection', socket => {
     socket.on('disconnect', () => {
         if (currentUser === undefined) return;
         console.log('before', onlineUsers);
+        console.log('i am disconnected', currentUser);
+
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
-        if (onlineUsers.length < 1) {
+
+        if (!gamers.includes(currentUser)) {
+            return;
+        } 
+        gamers = onlineUsers;
+        if (gamers.length < 1) {
             isEndGame = true;
         }
 
@@ -205,8 +213,6 @@ io.on('connection', socket => {
 
         updateDisconnectedRating(socket);
 
-        console.log(rating, ratingDisconnected);
-        console.log('i am disconnected', currentUser);
         console.log('after:', onlineUsers);
     });
 });
