@@ -33,7 +33,7 @@ app.post('/login', (req, res) => {
     const userFromReq = req.body;
     const userInDB = users.find(user => user.login === userFromReq.login);
     if (userInDB && userInDB.password === userFromReq.password) {
-        const token = jwt.sign(userFromReq, 'secret', { expiresIn: '24h' });
+        const token = jwt.sign(userFromReq, 'secret');
         res.status(200).json({ auth: true, token });
     } else {
         res.status(401).json({ auth: false });
@@ -152,10 +152,13 @@ io.on('connection', socket => {
     let currentUser;
 
     socket.on('enrollToRace', payload => {
-        currentUser = jwt.decode(payload.token).login;
-        onlineUsers.push(currentUser);
-        console.log('i am connected', currentUser);
-        console.log('all users:', onlineUsers);
+        const verified = jwt.verify(payload.token, 'secret');
+        if (verified) {
+            currentUser = verified.login;
+            onlineUsers.push(currentUser);
+            console.log('i am connected', currentUser);
+            console.log('all users:', onlineUsers);
+        }
     });
 
     socket.on('updateScore', payload => {
