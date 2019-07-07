@@ -1,7 +1,7 @@
 window.onload = () => {
     const jwt = localStorage.getItem('jwt');
     if (jwt) {
-        // fetch('/chat', {
+        // fetch('/game', {
         //     method: 'GET',
         //     headers: {
         //         'Authorization': 'Bearer ' + jwt,
@@ -9,7 +9,7 @@ window.onload = () => {
         // }).then(res => {
         //     res.text()
         // });
-        location.replace('/chat');
+        location.replace('/game');
     } else {
         location.replace('/login');
     }

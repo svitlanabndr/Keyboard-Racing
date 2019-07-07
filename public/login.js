@@ -19,7 +19,7 @@ window.onload = () => {
                 console.log(body);
                 if (body.auth) {
                     localStorage.setItem('jwt', body.token);
-                    location.replace('/chat');
+                    location.replace('/game');
                 } else {
                     console.log('auth failed');
                 }

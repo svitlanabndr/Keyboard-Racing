@@ -21,8 +21,8 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/chat', /*passport.authenticate('jwt'),*/ (req, res) => {
-    res.sendFile(path.join(__dirname, 'chat.html'));
+app.get('/game', /*passport.authenticate('jwt'),*/ (req, res) => {
+    res.sendFile(path.join(__dirname, 'game.html'));
 });
 
 app.get('/login', (req, res) => {
