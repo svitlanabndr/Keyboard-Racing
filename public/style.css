@@ -1,0 +1,113 @@
+.wrp-timer-out,
+.wrp-timer-in {
+    margin: 100px auto;
+    width: 50%;
+    height: 20%;
+    background-color: rgb(39, 180, 245);
+    border-radius: 3px;
+    font-size: 2em;
+    text-align: center;
+}
+
+h2 {
+    margin: 100px auto;
+    width: 25%;
+    background-color: #ccc;
+    border-radius: 3px;
+    font-size: 2em;
+    text-align: center;
+}
+
+button {
+    margin: 10px auto;
+    display: block;
+    width: 25%;
+    background-color: rgb(99, 248, 112);
+    border-radius: 3px;
+    font-size: 2em;
+}
+
+input {
+    border: 3px solid rgb(156, 56, 56);
+    display: block;
+    margin: 10px auto;
+    width: 50%;
+    background-color: rgb(253, 103, 103);
+    border-radius: 3px;
+    font-size: 2em;
+}
+
+.wrp-trace {
+    margin: 100px auto;
+    width: 50%;
+    background-color: orange;
+    border-radius: 3px;
+    font-size: 2em;
+    text-align: center;
+}
+ul,
+ol {
+    padding: 0;
+    margin: 0 auto;
+    width: 50%;
+    height: 20%;
+    background-color: lightcoral;
+    font-size: 2em;
+}
+
+li {
+    padding: 0 5px;
+}
+
+li span.score {
+    float: right;
+}
+#winners li span.score {
+    color: darkgreen;
+}
+
+#winners li span.score::after {
+    content: ' sec';
+}
+
+#rating li span.score {
+    color: rgb(19, 158, 19);
+}
+
+#rating li span.score::after {
+    content: ' points';
+}
+
+ul {
+    list-style: none;
+}
+
+#winners {
+    margin-top: 100px;
+    background-color: rgb(15, 184, 15);
+    font-weight: bold;
+}
+
+#rating {
+    background-color: rgb(82, 219, 82);
+}
+
+#disconnected {
+    background-color: #ccc;
+}
+
+.hidden-timer {
+    display: none;
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+.current{
+    font-weight: bold;
+}
+
+.done{
+    text-decoration: underline;
+}

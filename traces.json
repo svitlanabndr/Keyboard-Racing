@@ -1,0 +1,14 @@
+[
+    {"text": "mama"},
+    {"text": "smile"},
+    {"text": "family"},
+    {"text": "Strings are values made up of text and can contain letters, numbers, symbols, punctuation, and even emoji."},
+    {"text": "Numbers are values that can be used in mathematical operations."},
+    {"text": "Booleans are values that can be only one of two things: true or false."},
+    {"text": "Operators are the symbols between values that allow different operations like addition, subtraction, multiplication, and more."},
+    {"text": "Variables are named values and can store any type of JavaScript value."},
+    {"text": "Functions are blocks of code that can be named and reused."},
+    {"text": "Conditionals control behavior in JavaScript and determine whether or not pieces of code can run."},
+    {"text": "Arrays are container-like values that can hold other values."},
+    {"text": "Objects are values that can contain other values."}
+]

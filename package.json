@@ -1,0 +1,30 @@
+{
+  "name": "keyboard-racing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prikhodkoos/Keyboard-Racing.git"
+  },
+  "author": "Svitlana Prykhodko",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/prikhodkoos/Keyboard-Racing/issues"
+  },
+  "homepage": "https://github.com/prikhodkoos/Keyboard-Racing#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "http": "0.0.0",
+    "jsonwebtoken": "^8.5.1",
+    "nodemon": "^1.19.1",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "path": "^0.12.7",
+    "socket.io": "^2.2.0"
+  }
+}
