@@ -61,9 +61,11 @@ function createStartRating(gamers) {
     });
     return startRating;
 }
+
 function chooseTrace() {
     return traces[Math.floor(Math.random() * traces.length)].text;  
 }
+
 function reset() {
     invitedSockets.forEach(invitedSocket => {
         invitedSocket.leave('gameRoom');
@@ -74,6 +76,7 @@ function reset() {
     ratingWinners = [];
     ratingDisconnected = [];
 }
+
 setTimeout(function timeOut() {
     
     if (timeToGame === 0) {
@@ -108,7 +111,7 @@ setTimeout(function timeOut() {
             timeToGame = waitTime;
             setTimeout(timeOut, 1000);
         }
-    } else  {
+    } else {
         if (timeToGame === 5) {
             text = chooseTrace();
             if (onlineUsers.length >= 1) io.emit('getTrace', { text });
@@ -134,12 +137,14 @@ function deleteUserFromRating(user, rating) {
 
 function updateRating(socket) {
     socket.broadcast.to('gameRoom').emit('newRating', { rating });
-        socket.emit('newRating', { rating });
+    socket.emit('newRating', { rating });
 }
+
 function updateWinnersRating(socket) {
     socket.broadcast.to('gameRoom').emit('newWinnersRating', { rating: ratingWinners });
     socket.emit('newWinnersRating', { rating: ratingWinners });
 }
+
 function updateDisconnectedRating(socket) {
     socket.broadcast.to('gameRoom').emit('newDisconnectedRating', { rating: ratingDisconnected });
 }
@@ -147,15 +152,16 @@ function updateDisconnectedRating(socket) {
 io.on('connection', socket => {
     invitedSockets.push(socket);
     let currentUser;
-
     socket.on('enrollToRace', payload => {
         const verified = jwt.verify(payload.token, 'secret');
         if (verified) {
             currentUser = verified.login;
             onlineUsers.push(currentUser);
+
             console.log('i am connected', currentUser);
-            console.log('online users:', onlineUsers);
-            console.log('gamers:', gamers);
+            console.log('online users', onlineUsers);
+            console.log('gamers', gamers);
+
             if (timeToGame <= 5 && timeToGame >= 0) {
                 socket.emit('getTrace', { text });
                 socket.join('gameRoom');
@@ -168,7 +174,6 @@ io.on('connection', socket => {
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
         if (ratingItem) ratingItem.score = currentScore;
         sortRatingList(rating, 'desc');
-
         updateRating(socket)
     });
     
@@ -178,19 +183,12 @@ io.on('connection', socket => {
 
         deleteUserFromRating(currentUser, rating);
 
-        if (rating.length < 1) {
-            isEndGame = true;
-        }
+        if (rating.length < 1) isEndGame = true;
 
         updateRating(socket);
-
-        console.log('winners before', ratingWinners);
         ratingWinners.push({ user: currentUser, score: gameDuration });
-        console.log('winners after', ratingWinners);
         sortRatingList(ratingWinners);
-
         updateWinnersRating(socket);
- 
     });
 
     socket.on('disconnect', () => {
@@ -201,9 +199,7 @@ io.on('connection', socket => {
    
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
         
-        if (!gamers.includes(currentUser)) {
-            return;
-        }
+        if (!gamers.includes(currentUser)) return;
         gamers.splice( onlineUsers.indexOf(currentUser), 1 );
 
         if (gamers.length < 1) {
@@ -211,7 +207,6 @@ io.on('connection', socket => {
             return;
         }
 
-        console.log('я дошел сюда'); 
         deleteUserFromRating(currentUser, rating);
         deleteUserFromRating(currentUser, ratingWinners);
 
@@ -223,4 +218,3 @@ io.on('connection', socket => {
         updateDisconnectedRating(socket);
     });
 });
-

@@ -82,7 +82,6 @@ window.onload = () => {
                         socket.emit('updateScore', { score: counter });
                         if (counter === maxScore) {
                             console.log('win');
-                            
                             socket.emit('gameFinish');
                             keyboardHandler = () => {}; 
                         } else {
@@ -106,10 +105,8 @@ window.onload = () => {
 
         function createRatingList(array, list) {
             list.innerHTML = '';
-
             array.forEach(gamer => {
                 const newLi = document.createElement('li');
-
                 const name = document.createElement('span');
                 name.classList.add('name');
                 name.innerHTML = gamer.user;
