@@ -33,7 +33,7 @@ app.post('/login', (req, res) => {
     const userFromReq = req.body;
     const userInDB = users.find(user => user.login === userFromReq.login);
     if (userInDB && userInDB.password === userFromReq.password) {
-        const token = jwt.sign(userFromReq, 'someSecret', { expiresIn: '24h' });
+        const token = jwt.sign(userFromReq, 'secret', { expiresIn: '24h' });
         res.status(200).json({ auth: true, token });
     } else {
         res.status(401).json({ auth: false });

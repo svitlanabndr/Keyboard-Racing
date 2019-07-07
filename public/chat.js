@@ -67,8 +67,6 @@ window.onload = () => {
 
             createRatingList(rating, ratingList);
 
-            
-
             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
 
             keyboardHandler = (event) => {
@@ -120,6 +118,5 @@ window.onload = () => {
                 list.appendChild(newLi);
             });
         }
-
     }
 };
