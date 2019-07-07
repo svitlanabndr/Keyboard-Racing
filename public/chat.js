@@ -48,12 +48,10 @@ window.onload = () => {
 
         socket.on('newDisconnectedRating', payload => {
             createRatingList(payload.rating, disconnectedList);
-            disconnectedList.classList.add('disconnected');
         });
 
         socket.on('newWinnersRating', payload => {
             createRatingList(payload.rating, winnersList);
-            winnersList.classList.add('winners');
         });
 
         socket.on('newRating', payload => {
