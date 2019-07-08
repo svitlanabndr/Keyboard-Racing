@@ -86,7 +86,7 @@ function resetGame() {
     ratingDisconnected = [];
 }
 
-timer.start((type, context) => {
+function actionHandler(type, context) {
     switch (type) {
         case 'startGame':
             console.log('Game start gamers:', onlineUsers); 
@@ -126,7 +126,16 @@ timer.start((type, context) => {
         default:
             break;
     }
+}
+
+const proxyActionHandler = new Proxy(actionHandler,  {
+    apply(target, context, args) {
+        console.log(target,args);
+        return target(...args);
+    }
 });
+
+timer.start(proxyActionHandler);
 
 function sortRatingList(array, mode = 'asc') {
     let compare;
@@ -164,9 +173,7 @@ io.on('connection', socket => {
             currentUser = verified.login;
             onlineUsers.push(currentUser);
 
-            console.log('i am connected', currentUser);
-            console.log('online users', onlineUsers);
-            console.log('gamers', gamers);
+            proxyActionHandler('User connected', currentUser);
 
             if (timeToGame <= 5 && timeToGame >= 0) {
                 socket.emit('getTrace', { text });
@@ -188,6 +195,7 @@ io.on('connection', socket => {
         let gameDuration = Math.floor((gameFinishTime - gameStartTime) / 1000);
 
         deleteUserFromRating(currentUser, rating);
+        proxyActionHandler('User won', currentUser);
 
         if (rating.length < 1) isEndGame = true;
 
@@ -199,9 +207,8 @@ io.on('connection', socket => {
 
     socket.on('disconnect', () => {
         if (currentUser === undefined) return;
-        console.log('i am disconnected', currentUser);
-        console.log('online users', onlineUsers);
-        console.log('gamers', gamers);
+     
+        proxyActionHandler('User disconnected', currentUser);
    
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
         

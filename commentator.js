@@ -1,0 +1,5 @@
+class Commentator {
+    constructor() {
+        
+    }
+}
