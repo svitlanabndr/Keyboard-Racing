@@ -1,3 +1,5 @@
+const Timer = require('./timer');
+
 const path = require('path');
 const express = require('express');
 const app = express();
@@ -40,6 +42,11 @@ app.post('/login', (req, res) => {
     }
 });
 
+const timer = new Timer(
+    () => { return onlineUsers },
+    () => { return isEndGame }, 20,20
+);
+
 const onlineUsers = [];
 let invitedSockets = [];
 let rating = [];
@@ -48,25 +55,27 @@ let ratingDisconnected = [];
 let isEndGame = false;
 let text;
 let gamers = [];
+const cars = ['Ferrari', 'BMW', 'Porsche', 'Bugatti', 'Audi'];
 let gameStartTime;
-const gameTime = 40;
-const waitTime = 20;
-let timeToGame = waitTime;
-let timeToEndGame = gameTime;
+let timeToGame;
 
 function createStartRating(gamers) {
     let startRating = [];
-    gamers.forEach(gamer => {
-        startRating.push({ user: gamer, score: 0 });
+    gamers.forEach((gamer, i) => {
+        startRating.push({ id: i+1, user: gamer, score: 0, car: getCar() });
     });
     return startRating;
+}
+
+function getCar() {
+    return cars[Math.floor(Math.random() * cars.length)];
 }
 
 function chooseTrace() {
     return traces[Math.floor(Math.random() * traces.length)].text;  
 }
 
-function reset() {
+function resetGame() {
     invitedSockets.forEach(invitedSocket => {
         invitedSocket.leave('gameRoom');
     });
@@ -77,10 +86,9 @@ function reset() {
     ratingDisconnected = [];
 }
 
-setTimeout(function timeOut() {
-    
-    if (timeToGame === 0) {
-        if (onlineUsers.length >= 1) {
+timer.start((type, context) => {
+    switch (type) {
+        case 'startGame':
             console.log('Game start gamers:', onlineUsers); 
             gamers = [...onlineUsers];
             rating = createStartRating(gamers);
@@ -89,38 +97,36 @@ setTimeout(function timeOut() {
             });
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
-            setTimeout(function gameTimer() {    
-                if (timeToEndGame == 0 || isEndGame) {
-                    console.log('endgame :(')
-                    io.to('gameRoom').emit('clearTrace');
-                    setTimeout(() => { 
-                        io.to('gameRoom').emit('clearRating');
-                        timeToGame = waitTime;
-                        timeToEndGame = gameTime;
-                        reset();
-                        setTimeout(timeOut, 1000);
-                    }, 5000)
-                } else {
-                    io.emit('timerInGame', { countdown: timeToEndGame });
-                    setTimeout(gameTimer, 1000);
-                }
-                timeToEndGame--;
-            }, 1000);
-        } else {
-            console.log('no game :(');
-            timeToGame = waitTime;
-            setTimeout(timeOut, 1000);
-        }
-    } else {
-        if (timeToGame === 5) {
+            break;
+            
+        case 'clearTrace':
+            console.log('endgame :(')
+            io.to('gameRoom').emit('clearTrace');
+            break;
+
+        case 'clearGame':
+            io.to('gameRoom').emit('clearRating');
+            resetGame();
+            break;
+
+        case 'gameTimer':
+            io.emit('timerInGame', { countdown: context });
+            break;
+
+        case 'preGame':
             text = chooseTrace();
             if (onlineUsers.length >= 1) io.emit('getTrace', { text });
-        }
-        io.emit('timerOutGame', { countdown: timeToGame });
-        setTimeout(timeOut, 1000);
+            break;
+
+        case 'breakTimer':
+            timeToGame = context
+            io.emit('timerOutGame', { countdown: context });
+            break;
+    
+        default:
+            break;
     }
-    timeToGame--;
-}, 1000);
+});
 
 function sortRatingList(array, mode = 'asc') {
     let compare;

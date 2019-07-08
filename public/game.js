@@ -12,6 +12,8 @@ window.onload = () => {
         const timerOut = document.querySelector('#timerOut');
         const timerOutDiv = document.querySelector('.wrp-timer-out');
         const timerInDiv = document.querySelector('.wrp-timer-in');
+        const messageDiv = document.querySelector('.notification-wrp');
+        const messageWrp = document.querySelector('.notification-msg-wrp');
         let text;
 
         const socket = io.connect('http://localhost:3000');
@@ -41,6 +43,10 @@ window.onload = () => {
         });
 
         socket.on('clearRating', () => {
+
+            messageDiv.classList.add('hidden');
+            messageWrp.innerHTML = '';
+
             ratingList.innerHTML = '';
             winnersList.innerHTML = '';
             disconnectedList.innerHTML = '';
@@ -63,6 +69,11 @@ window.onload = () => {
             displayTrace(text);
         });
 
+        socket.on('newMessage', payload => {
+            let message = payload.message;
+            displayMessage(message);
+        });
+
         socket.on('game', payload => {
             let counter = 0;
             let currentLetter = text[counter];
@@ -70,7 +81,7 @@ window.onload = () => {
             const rating = payload.rating;
 
             createRatingList(rating, ratingList);
-
+            messageDiv.classList.remove('hidden');
             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
 
             keyboardHandler = (event) => {
@@ -93,6 +104,11 @@ window.onload = () => {
                     currentLetter = text[counter];
             };
         });
+
+
+        function displayMessage(message) {
+
+        }
 
         function displayTrace(text) {
             trace.innerHTML ='';

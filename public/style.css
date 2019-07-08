@@ -111,3 +111,51 @@ ul {
 .done{
     text-decoration: underline;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  padding: 0 100px;
+  text-align: justify;
+}
+
+.notification-wrp {
+  position: fixed;
+  bottom: 30px;
+  right: 50px;
+
+}
+
+.notification-icon {
+  height: 50px;
+}
+
+.notification-msg-wrp,
+.notification-msg-wrp:after {
+  position: absolute;
+  box-shadow: 0 0 6px 1px #98deff;
+  background-color: #d1f0ff;
+}
+
+.notification-msg-wrp {
+  bottom: calc(100% + 20px);
+  right: 0;
+  height: 300px;
+  max-height: 400px;
+  width: 300px;
+  overflow-y: auto;
+  border-radius: 5px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: right;
+}
+
+.notification-msg-wrp .message {
+  font-size: 18px;
+  margin-top: 10px;
+  background-color: #0af36f;
+  border-radius: 5px;
+  padding: 5px;
+}
