@@ -2,7 +2,7 @@ class Timer {
     constructor( 
         onlineUsersProvider,
         endGameProvider,
-        gameTime = 20,
+        gameTime = 50,
         breakTime = 20
     ) {
         this.onlineUsersProvider = onlineUsersProvider;

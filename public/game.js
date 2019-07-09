@@ -42,6 +42,13 @@ window.onload = () => {
             trace.innerHTML = '';
         });
 
+        socket.on('newComment', payload => {
+            let newComment = document.createElement('div');
+            newComment.classList.add('message');
+            newComment.innerHTML = payload.comment;
+            messageWrp.appendChild(newComment);
+        });
+
         socket.on('clearRating', () => {
 
             messageDiv.classList.add('hidden');

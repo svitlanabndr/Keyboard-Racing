@@ -1,4 +1,5 @@
 const Timer = require('./timer');
+const CommentsFactory = require('./commentsFactory');
 
 const path = require('path');
 const express = require('express');
@@ -44,7 +45,7 @@ app.post('/login', (req, res) => {
 
 const timer = new Timer(
     () => { return onlineUsers },
-    () => { return isEndGame }, 20,20
+    () => { return isEndGame }
 );
 
 const onlineUsers = [];
@@ -89,18 +90,22 @@ function resetGame() {
 function actionHandler(type, context) {
     switch (type) {
         case 'startGame':
-            console.log('Game start gamers:', onlineUsers); 
             gamers = [...onlineUsers];
             rating = createStartRating(gamers);
             invitedSockets.forEach(invitedSocket => {
                 invitedSocket.join('gameRoom');
+                console.log('i am in game room');
             });
+            proxyActionHandler('hello');
+            proxyActionHandler('start', rating)
+
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
             break;
             
         case 'clearTrace':
             console.log('endgame :(')
+            proxyActionHandler('finish', ratingWinners);
             io.to('gameRoom').emit('clearTrace');
             break;
 
@@ -110,6 +115,8 @@ function actionHandler(type, context) {
             break;
 
         case 'gameTimer':
+            if (context % 10 === 0) proxyActionHandler('current', rating);
+            if ((context - 5) % 10 === 0) proxyActionHandler('joke');
             io.emit('timerInGame', { countdown: context });
             break;
 
@@ -127,10 +134,18 @@ function actionHandler(type, context) {
             break;
     }
 }
-
+const SPECIAL_ACTIONS = ['hello', 'start', 'disconnect', 'winner', 'current', 'finish', 'joke'];
+// Proxy
 const proxyActionHandler = new Proxy(actionHandler,  {
     apply(target, context, args) {
         console.log(target,args);
+        let [type, data] = args;
+        let comment;
+        if (SPECIAL_ACTIONS.includes(type)) {
+            comment = CommentsFactory.createComment(type, data);
+            console.log(comment);
+            io.to('gameRoom').emit('newComment', {comment});
+        }
         return target(...args);
     }
 });
@@ -148,6 +163,7 @@ function sortRatingList(array, mode = 'asc') {
 function deleteUserFromRating(user, rating) {
     let ratingItem = rating.find(ratingItem => ratingItem.user === user);
     if (ratingItem) rating.splice( rating.indexOf(ratingItem), 1 );
+    // return ratingItem;
 }
 
 function updateRating(socket) {
@@ -173,7 +189,7 @@ io.on('connection', socket => {
             currentUser = verified.login;
             onlineUsers.push(currentUser);
 
-            proxyActionHandler('User connected', currentUser);
+            proxyActionHandler('Connect', currentUser);
 
             if (timeToGame <= 5 && timeToGame >= 0) {
                 socket.emit('getTrace', { text });
@@ -195,12 +211,13 @@ io.on('connection', socket => {
         let gameDuration = Math.floor((gameFinishTime - gameStartTime) / 1000);
 
         deleteUserFromRating(currentUser, rating);
-        proxyActionHandler('User won', currentUser);
 
         if (rating.length < 1) isEndGame = true;
 
         updateRating(socket);
-        ratingWinners.push({ user: currentUser, score: gameDuration });
+        let winner = { user: currentUser, score: gameDuration };
+        proxyActionHandler('winner', winner);
+        ratingWinners.push(winner);
         sortRatingList(ratingWinners);
         updateWinnersRating(socket);
     });
@@ -208,12 +225,14 @@ io.on('connection', socket => {
     socket.on('disconnect', () => {
         if (currentUser === undefined) return;
      
-        proxyActionHandler('User disconnected', currentUser);
+        proxyActionHandler('Disconnect', currentUser);
    
         onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
         
         if (!gamers.includes(currentUser)) return;
         gamers.splice( onlineUsers.indexOf(currentUser), 1 );
+        proxyActionHandler('disconnect', currentUser);
+
 
         if (gamers.length < 1) {
             isEndGame = true;
