@@ -1,6 +1,7 @@
 const Timer = require('./timer');
 const CommentsFactory = require('./commentsFactory');
 
+const _ = require('lodash');
 const path = require('path');
 const express = require('express');
 const app = express();
@@ -160,15 +161,13 @@ function deleteUserFromRating(user, rating) {
     return rating.filter((ratingItem) => ratingItem.user !== user);
 }
 
-function updateRating(socket, rating) {
-    socket.broadcast.to('gameRoom').emit('newRating', { rating });
-    socket.emit('newRating', { rating });
+function updateRating(socket, rating, event) {
+    socket.broadcast.to('gameRoom').emit(event, { rating });
+    socket.emit(event, { rating });
 }
 
-function updateWinnersRating(socket, ratingWinners) {
-    socket.broadcast.to('gameRoom').emit('newWinnersRating', { rating: ratingWinners });
-    socket.emit('newWinnersRating', { rating: ratingWinners });
-}
+const updateCurrentRating = _.partial(updateRating, _, _, 'newRating');
+const updateWinnersRating = _.partial(updateRating, _, _, 'newWinnersRating');
 
 function updateDisconnectedRating(socket, ratingDisconnected) {
     socket.broadcast.to('gameRoom').emit('newDisconnectedRating', { rating: ratingDisconnected });
@@ -197,16 +196,17 @@ io.on('connection', socket => {
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
         if (ratingItem) ratingItem.score = currentScore;
         rating = sortRatingList(rating).reverse();
-        updateRating(socket, rating)
+        updateCurrentRating(socket, rating)
     });
     
     socket.on('gameFinish', () => {
         let gameFinishTime = new Date().getTime();
         let gameDuration = Math.floor((gameFinishTime - gameStartTime) / 1000);
+        rating = deleteUserFromRating(currentUser, rating);
 
         if (rating.length < 1) isEndGame = true;
 
-        updateRating(socket, rating);
+        updateCurrentRating(socket, rating);
         let winner = { user: currentUser, score: gameDuration };
         proxyActionHandler('winner', winner);
         ratingWinners.push(winner);
@@ -234,7 +234,7 @@ io.on('connection', socket => {
         rating = deleteUserFromRating(currentUser, rating);
         ratingWinners = deleteUserFromRating(currentUser, ratingWinners);
 
-        updateRating(socket, rating);
+        updateCurrentRating(socket, rating);
         updateWinnersRating(socket,ratingWinners);
 
         ratingDisconnected.push({ user: currentUser });
