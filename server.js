@@ -152,31 +152,25 @@ const proxyActionHandler = new Proxy(actionHandler,  {
 
 timer.start(proxyActionHandler);
 
-function sortRatingList(array, mode = 'asc') {
-    let compare;
-    mode === 'desc'? 
-        compare = (a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0) : 
-        compare = (a,b) => (a.score > b.score) ? 1 : ((b.score > a.score) ? -1 : 0); 
-    array.sort(compare);
+function sortRatingList(array) {
+    return array.sort((a, b) => a.score - b.score);
 }
 
 function deleteUserFromRating(user, rating) {
-    let ratingItem = rating.find(ratingItem => ratingItem.user === user);
-    if (ratingItem) rating.splice( rating.indexOf(ratingItem), 1 );
-    // return ratingItem;
+    return rating.filter((ratingItem) => ratingItem.user !== user);
 }
 
-function updateRating(socket) {
+function updateRating(socket, rating) {
     socket.broadcast.to('gameRoom').emit('newRating', { rating });
     socket.emit('newRating', { rating });
 }
 
-function updateWinnersRating(socket) {
+function updateWinnersRating(socket, ratingWinners) {
     socket.broadcast.to('gameRoom').emit('newWinnersRating', { rating: ratingWinners });
     socket.emit('newWinnersRating', { rating: ratingWinners });
 }
 
-function updateDisconnectedRating(socket) {
+function updateDisconnectedRating(socket, ratingDisconnected) {
     socket.broadcast.to('gameRoom').emit('newDisconnectedRating', { rating: ratingDisconnected });
 }
 
@@ -202,24 +196,22 @@ io.on('connection', socket => {
         let currentScore = payload.score;
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
         if (ratingItem) ratingItem.score = currentScore;
-        sortRatingList(rating, 'desc');
-        updateRating(socket)
+        rating = sortRatingList(rating).reverse();
+        updateRating(socket, rating)
     });
     
     socket.on('gameFinish', () => {
         let gameFinishTime = new Date().getTime();
         let gameDuration = Math.floor((gameFinishTime - gameStartTime) / 1000);
 
-        deleteUserFromRating(currentUser, rating);
-
         if (rating.length < 1) isEndGame = true;
 
-        updateRating(socket);
+        updateRating(socket, rating);
         let winner = { user: currentUser, score: gameDuration };
         proxyActionHandler('winner', winner);
         ratingWinners.push(winner);
-        sortRatingList(ratingWinners);
-        updateWinnersRating(socket);
+        ratingWinners = sortRatingList(ratingWinners);
+        updateWinnersRating(socket, ratingWinners);
     });
 
     socket.on('disconnect', () => {
@@ -239,14 +231,14 @@ io.on('connection', socket => {
             return;
         }
 
-        deleteUserFromRating(currentUser, rating);
-        deleteUserFromRating(currentUser, ratingWinners);
+        rating = deleteUserFromRating(currentUser, rating);
+        ratingWinners = deleteUserFromRating(currentUser, ratingWinners);
 
-        updateRating(socket);
-        updateWinnersRating(socket);
+        updateRating(socket, rating);
+        updateWinnersRating(socket,ratingWinners);
 
         ratingDisconnected.push({ user: currentUser });
 
-        updateDisconnectedRating(socket);
+        updateDisconnectedRating(socket, ratingDisconnected);
     });
 });
