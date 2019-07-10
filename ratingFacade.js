@@ -1,22 +1,20 @@
 // Facade
 class RatingFacade {
     static createRating(gamers) {
-    
         let startRating = [];
-
         gamers.forEach((gamer, i) => {
             startRating.push(new Gamer(i, gamer));
         });
-
         return startRating;
     }
 }
+
 class Gamer {
     constructor(id, user) {
         this.id = id + 1;
         this.user = user;
         this.score = 0;
-        this.car = new Car(this.id - 1).car;
+        this.car = new Car(id).car;
     }
 }
 
@@ -26,8 +24,7 @@ class Car {
     }
 
     createCar(id) {
-        const BRANDS = require('./brands.json');
-
+        const BRANDS = require('./brands.json')
         if (BRANDS[id]) {
             return this.getUniqueCar(BRANDS, id);
         }

@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-router.get('/game', /*passport.authenticate('jwt'),*/ (req, res) => {
+router.get('/game', (req, res) => {
     res.sendFile(path.join(__dirname, 'game.html'));
 });
 
@@ -19,7 +19,6 @@ router.get('/login', (req, res) => {
 });
 
 router.post('/login', (req, res) => {
-    console.log('---------')
     const userFromReq = req.body;
     const userInDB = users.find(user => user.login === userFromReq.login);
     if (userInDB && userInDB.password === userFromReq.password) {

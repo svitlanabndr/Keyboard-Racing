@@ -1,7 +1,6 @@
 const Timer = require('./timer');
 const CommentsFactory = require('./commentsFactory');
 const RatingFacade = require('./ratingFacade');
-
 const _ = require('lodash');
 const express = require('express');
 const app = express();
@@ -11,15 +10,11 @@ const jwt = require('jsonwebtoken');
 const traces = require('./traces.json');
 const bodyParser = require('body-parser');
 const path = require('path');
-const passport = require('passport');
 const router = require('./routes');
-
-require('./passport.config.js');
 
 server.listen(3000);
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(passport.initialize());
 app.use(bodyParser.json());
 app.use('/', router);
 app.use('/game', router);
@@ -67,7 +62,6 @@ function actionHandler(type, context) {
             });
             proxyActionHandler('hello');
             proxyActionHandler('start', rating)
-
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
             break;
@@ -188,9 +182,7 @@ io.on('connection', socket => {
 
     socket.on('disconnect', () => {
         if (currentUser === undefined) return;
-     
-        proxyActionHandler('Disconnect', currentUser);
-   
+
         onlineUsers.splice(onlineUsers.indexOf(currentUser), 1);
         
         if (!gamers.includes(currentUser)) return;
