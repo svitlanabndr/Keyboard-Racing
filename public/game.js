@@ -114,11 +114,6 @@ window.onload = () => {
             };
         });
 
-
-        function displayMessage(message) {
-
-        }
-
         function displayTrace(text) {
             trace.innerHTML ='';
             text.split('').forEach(char => {
