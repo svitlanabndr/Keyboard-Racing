@@ -1,5 +1,6 @@
 const Timer = require('./timer');
 const CommentsFactory = require('./commentsFactory');
+const RatingFacade = require('./ratingFacade');
 
 const _ = require('lodash');
 const express = require('express');
@@ -24,11 +25,6 @@ app.use('/', router);
 app.use('/game', router);
 app.use('/login', router);
 
-const timer = new Timer(
-    () => { return onlineUsers },
-    () => { return isEndGame }
-);
-
 const onlineUsers = [];
 let invitedSockets = [];
 let rating = [];
@@ -37,23 +33,16 @@ let ratingDisconnected = [];
 let isEndGame = false;
 let text;
 let gamers = [];
-const cars = ['Ferrari', 'BMW', 'Porsche', 'Bugatti', 'Audi'];
 let gameStartTime;
 let timeToGame;
+const SPECIAL_ACTIONS = ['hello', 'start', 'disconnect', 'winner', 'current', 'beforeFinish', 'finish', 'joke'];
 
-function createStartRating(gamers) {
-    let startRating = [];
-    gamers.forEach((gamer, i) => {
-        startRating.push({ id: i+1, user: gamer, score: 0, car: getCar() });
-    });
-    return startRating;
-}
+const timer = new Timer(
+    () => { return onlineUsers },
+    () => { return isEndGame }
+);
 
-function getCar() {
-    return cars[Math.floor(Math.random() * cars.length)];
-}
-
-function chooseTrace() {
+function getRandomTrace() {
     return traces[Math.floor(Math.random() * traces.length)].text;  
 }
 
@@ -72,7 +61,7 @@ function actionHandler(type, context) {
     switch (type) {
         case 'startGame':
             gamers = [...onlineUsers];
-            rating = createStartRating(gamers);
+            rating = RatingFacade.createRating(gamers);
             invitedSockets.forEach(invitedSocket => {
                 invitedSocket.join('gameRoom');
             });
@@ -101,7 +90,7 @@ function actionHandler(type, context) {
             break;
 
         case 'preGame':
-            text = chooseTrace();
+            text = getRandomTrace();
             if (onlineUsers.length >= 1) io.emit('getTrace', { text });
             break;
 
@@ -114,7 +103,7 @@ function actionHandler(type, context) {
             break;
     }
 }
-const SPECIAL_ACTIONS = ['hello', 'start', 'disconnect', 'winner', 'current', 'beforeFinish', 'finish', 'joke'];
+
 // Proxy
 const proxyActionHandler = new Proxy(actionHandler,  {
     apply(target, context, args) {
