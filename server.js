@@ -2,47 +2,27 @@ const Timer = require('./timer');
 const CommentsFactory = require('./commentsFactory');
 
 const _ = require('lodash');
-const path = require('path');
 const express = require('express');
 const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const jwt = require('jsonwebtoken');
-const passport = require('passport');
-const bodyParser = require('body-parser');
-const users = require('./users.json');
 const traces = require('./traces.json');
-
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(passport.initialize());
-app.use(bodyParser.json());
+const bodyParser = require('body-parser');
+const path = require('path');
+const passport = require('passport');
+const router = require('./routes');
 
 require('./passport.config.js');
 
 server.listen(3000);
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/game', /*passport.authenticate('jwt'),*/ (req, res) => {
-    res.sendFile(path.join(__dirname, 'game.html'));
-});
-
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
-});
-
-app.post('/login', (req, res) => {
-    const userFromReq = req.body;
-    const userInDB = users.find(user => user.login === userFromReq.login);
-    if (userInDB && userInDB.password === userFromReq.password) {
-        const token = jwt.sign(userFromReq, 'secret');
-        res.status(200).json({ auth: true, token });
-    } else {
-        res.status(401).json({ auth: false });
-    }
-});
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(passport.initialize());
+app.use(bodyParser.json());
+app.use('/', router);
+app.use('/game', router);
+app.use('/login', router);
 
 const timer = new Timer(
     () => { return onlineUsers },
@@ -139,13 +119,13 @@ const SPECIAL_ACTIONS = ['hello', 'start', 'disconnect', 'winner', 'current', 'f
 // Proxy
 const proxyActionHandler = new Proxy(actionHandler,  {
     apply(target, context, args) {
-        console.log(target,args);
+        console.log(target, args);
         let [type, data] = args;
         let comment;
         if (SPECIAL_ACTIONS.includes(type)) {
             comment = CommentsFactory.createComment(type, data);
             console.log(comment);
-            io.to('gameRoom').emit('newComment', {comment});
+            io.to('gameRoom').emit('newComment', { comment });
         }
         return target(...args);
     }
@@ -219,12 +199,11 @@ io.on('connection', socket => {
      
         proxyActionHandler('Disconnect', currentUser);
    
-        onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
+        onlineUsers.splice(onlineUsers.indexOf(currentUser), 1);
         
         if (!gamers.includes(currentUser)) return;
-        gamers.splice( onlineUsers.indexOf(currentUser), 1 );
+        gamers.splice(onlineUsers.indexOf(currentUser), 1);
         proxyActionHandler('disconnect', currentUser);
-
 
         if (gamers.length < 1) {
             isEndGame = true;
@@ -235,7 +214,7 @@ io.on('connection', socket => {
         ratingWinners = deleteUserFromRating(currentUser, ratingWinners);
 
         updateCurrentRating(socket, rating);
-        updateWinnersRating(socket,ratingWinners);
+        updateWinnersRating(socket, ratingWinners);
 
         ratingDisconnected.push({ user: currentUser });
 
