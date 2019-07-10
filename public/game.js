@@ -12,6 +12,8 @@ window.onload = () => {
         const timerOut = document.querySelector('#timerOut');
         const timerOutDiv = document.querySelector('.wrp-timer-out');
         const timerInDiv = document.querySelector('.wrp-timer-in');
+        const messageDiv = document.querySelector('.notification-wrp');
+        const messageWrp = document.querySelector('.notification-msg-wrp');
         let text;
 
         const socket = io.connect('http://localhost:3000');
@@ -40,7 +42,18 @@ window.onload = () => {
             trace.innerHTML = '';
         });
 
+        socket.on('newComment', payload => {
+            let newComment = document.createElement('div');
+            newComment.classList.add('message');
+            newComment.innerHTML = payload.comment;
+            messageWrp.appendChild(newComment);
+        });
+
         socket.on('clearRating', () => {
+
+            messageDiv.classList.add('hidden');
+            messageWrp.innerHTML = '';
+
             ratingList.innerHTML = '';
             winnersList.innerHTML = '';
             disconnectedList.innerHTML = '';
@@ -63,6 +76,11 @@ window.onload = () => {
             displayTrace(text);
         });
 
+        socket.on('newMessage', payload => {
+            let message = payload.message;
+            displayMessage(message);
+        });
+
         socket.on('game', payload => {
             let counter = 0;
             let currentLetter = text[counter];
@@ -70,7 +88,7 @@ window.onload = () => {
             const rating = payload.rating;
 
             createRatingList(rating, ratingList);
-
+            messageDiv.classList.remove('hidden');
             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
 
             keyboardHandler = (event) => {
@@ -84,6 +102,8 @@ window.onload = () => {
                             console.log('win');
                             socket.emit('gameFinish');
                             keyboardHandler = () => {}; 
+                        } else if (maxScore - counter === 5) {
+                            socket.emit('beforeFinish');
                         } else {
                             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
                         }

@@ -1,44 +1,24 @@
-const path = require('path');
+const Timer = require('./timer');
+const CommentsFactory = require('./commentsFactory');
+const RatingFacade = require('./ratingFacade');
+const _ = require('lodash');
 const express = require('express');
 const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const jwt = require('jsonwebtoken');
-const passport = require('passport');
-const bodyParser = require('body-parser');
-const users = require('./users.json');
 const traces = require('./traces.json');
-
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(passport.initialize());
-app.use(bodyParser.json());
-
-require('./passport.config.js');
+const bodyParser = require('body-parser');
+const path = require('path');
+const router = require('./routes');
 
 server.listen(3000);
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/game', /*passport.authenticate('jwt'),*/ (req, res) => {
-    res.sendFile(path.join(__dirname, 'game.html'));
-});
-
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
-});
-
-app.post('/login', (req, res) => {
-    const userFromReq = req.body;
-    const userInDB = users.find(user => user.login === userFromReq.login);
-    if (userInDB && userInDB.password === userFromReq.password) {
-        const token = jwt.sign(userFromReq, 'secret');
-        res.status(200).json({ auth: true, token });
-    } else {
-        res.status(401).json({ auth: false });
-    }
-});
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.json());
+app.use('/', router);
+app.use('/game', router);
+app.use('/login', router);
 
 const onlineUsers = [];
 let invitedSockets = [];
@@ -49,24 +29,19 @@ let isEndGame = false;
 let text;
 let gamers = [];
 let gameStartTime;
-const gameTime = 40;
-const waitTime = 20;
-let timeToGame = waitTime;
-let timeToEndGame = gameTime;
+let timeToGame;
+const SPECIAL_ACTIONS = ['hello', 'start', 'disconnect', 'winner', 'current', 'beforeFinish', 'finish', 'joke'];
 
-function createStartRating(gamers) {
-    let startRating = [];
-    gamers.forEach(gamer => {
-        startRating.push({ user: gamer, score: 0 });
-    });
-    return startRating;
-}
+const timer = new Timer(
+    () => { return onlineUsers },
+    () => { return isEndGame }
+);
 
-function chooseTrace() {
+function getRandomTrace() {
     return traces[Math.floor(Math.random() * traces.length)].text;  
 }
 
-function reset() {
+function resetGame() {
     invitedSockets.forEach(invitedSocket => {
         invitedSocket.leave('gameRoom');
     });
@@ -77,75 +52,86 @@ function reset() {
     ratingDisconnected = [];
 }
 
-setTimeout(function timeOut() {
-    
-    if (timeToGame === 0) {
-        if (onlineUsers.length >= 1) {
-            console.log('Game start gamers:', onlineUsers); 
+function actionHandler(type, context) {
+    switch (type) {
+        case 'startGame':
             gamers = [...onlineUsers];
-            rating = createStartRating(gamers);
+            rating = RatingFacade.createRating(gamers);
             invitedSockets.forEach(invitedSocket => {
                 invitedSocket.join('gameRoom');
             });
+            proxyActionHandler('hello');
+            proxyActionHandler('start', rating)
             gameStartTime = new Date().getTime();
             io.to('gameRoom').emit('game', { rating });
-            setTimeout(function gameTimer() {    
-                if (timeToEndGame == 0 || isEndGame) {
-                    console.log('endgame :(')
-                    io.to('gameRoom').emit('clearTrace');
-                    setTimeout(() => { 
-                        io.to('gameRoom').emit('clearRating');
-                        timeToGame = waitTime;
-                        timeToEndGame = gameTime;
-                        reset();
-                        setTimeout(timeOut, 1000);
-                    }, 5000)
-                } else {
-                    io.emit('timerInGame', { countdown: timeToEndGame });
-                    setTimeout(gameTimer, 1000);
-                }
-                timeToEndGame--;
-            }, 1000);
-        } else {
-            console.log('no game :(');
-            timeToGame = waitTime;
-            setTimeout(timeOut, 1000);
-        }
-    } else {
-        if (timeToGame === 5) {
-            text = chooseTrace();
-            if (onlineUsers.length >= 1) io.emit('getTrace', { text });
-        }
-        io.emit('timerOutGame', { countdown: timeToGame });
-        setTimeout(timeOut, 1000);
-    }
-    timeToGame--;
-}, 1000);
+            break;
+            
+        case 'clearTrace':
+            console.log('endgame :(')
+            proxyActionHandler('finish', ratingWinners);
+            io.to('gameRoom').emit('clearTrace');
+            break;
 
-function sortRatingList(array, mode = 'asc') {
-    let compare;
-    mode === 'desc'? 
-        compare = (a,b) => (a.score < b.score) ? 1 : ((b.score < a.score) ? -1 : 0) : 
-        compare = (a,b) => (a.score > b.score) ? 1 : ((b.score > a.score) ? -1 : 0); 
-    array.sort(compare);
+        case 'clearGame':
+            io.to('gameRoom').emit('clearRating');
+            resetGame();
+            break;
+
+        case 'gameTimer':
+            if (context % 10 === 0) proxyActionHandler('current', rating);
+            if ((context - 5) % 10 === 0) proxyActionHandler('joke');
+            io.emit('timerInGame', { countdown: context });
+            break;
+
+        case 'preGame':
+            text = getRandomTrace();
+            if (onlineUsers.length >= 1) io.emit('getTrace', { text });
+            break;
+
+        case 'breakTimer':
+            timeToGame = context
+            io.emit('timerOutGame', { countdown: context });
+            break;
+    
+        default:
+            break;
+    }
+}
+
+// Proxy
+const proxyActionHandler = new Proxy(actionHandler,  {
+    apply(target, context, args) {
+        console.log(target, args);
+        let [type, data] = args;
+        let comment;
+        if (SPECIAL_ACTIONS.includes(type)) {
+            comment = CommentsFactory.createComment(type, data);
+            console.log(comment);
+            io.to('gameRoom').emit('newComment', { comment });
+        }
+        return target(...args);
+    }
+});
+
+timer.start(proxyActionHandler);
+
+function sortRatingList(array) {
+    return array.sort((a, b) => a.score - b.score);
 }
 
 function deleteUserFromRating(user, rating) {
-    let ratingItem = rating.find(ratingItem => ratingItem.user === user);
-    if (ratingItem) rating.splice( rating.indexOf(ratingItem), 1 );
+    return rating.filter((ratingItem) => ratingItem.user !== user);
 }
 
-function updateRating(socket) {
-    socket.broadcast.to('gameRoom').emit('newRating', { rating });
-    socket.emit('newRating', { rating });
+function updateRating(socket, rating, event) {
+    socket.broadcast.to('gameRoom').emit(event, { rating });
+    socket.emit(event, { rating });
 }
 
-function updateWinnersRating(socket) {
-    socket.broadcast.to('gameRoom').emit('newWinnersRating', { rating: ratingWinners });
-    socket.emit('newWinnersRating', { rating: ratingWinners });
-}
+const updateCurrentRating = _.partial(updateRating, _, _, 'newRating');
+const updateWinnersRating = _.partial(updateRating, _, _, 'newWinnersRating');
 
-function updateDisconnectedRating(socket) {
+function updateDisconnectedRating(socket, ratingDisconnected) {
     socket.broadcast.to('gameRoom').emit('newDisconnectedRating', { rating: ratingDisconnected });
 }
 
@@ -158,9 +144,7 @@ io.on('connection', socket => {
             currentUser = verified.login;
             onlineUsers.push(currentUser);
 
-            console.log('i am connected', currentUser);
-            console.log('online users', onlineUsers);
-            console.log('gamers', gamers);
+            proxyActionHandler('Connect', currentUser);
 
             if (timeToGame <= 5 && timeToGame >= 0) {
                 socket.emit('getTrace', { text });
@@ -173,48 +157,51 @@ io.on('connection', socket => {
         let currentScore = payload.score;
         let ratingItem = rating.find(ratingItem => ratingItem.user === currentUser);
         if (ratingItem) ratingItem.score = currentScore;
-        sortRatingList(rating, 'desc');
-        updateRating(socket)
+        rating = sortRatingList(rating).reverse();
+        updateCurrentRating(socket, rating)
+    });
+
+    socket.on('beforeFinish', () => {
+        proxyActionHandler('beforeFinish', rating);
     });
     
     socket.on('gameFinish', () => {
         let gameFinishTime = new Date().getTime();
         let gameDuration = Math.floor((gameFinishTime - gameStartTime) / 1000);
-
-        deleteUserFromRating(currentUser, rating);
+        rating = deleteUserFromRating(currentUser, rating);
 
         if (rating.length < 1) isEndGame = true;
 
-        updateRating(socket);
-        ratingWinners.push({ user: currentUser, score: gameDuration });
-        sortRatingList(ratingWinners);
-        updateWinnersRating(socket);
+        updateCurrentRating(socket, rating);
+        let winner = { user: currentUser, score: gameDuration };
+        proxyActionHandler('winner', winner);
+        ratingWinners.push(winner);
+        ratingWinners = sortRatingList(ratingWinners);
+        updateWinnersRating(socket, ratingWinners);
     });
 
     socket.on('disconnect', () => {
         if (currentUser === undefined) return;
-        console.log('i am disconnected', currentUser);
-        console.log('online users', onlineUsers);
-        console.log('gamers', gamers);
-   
-        onlineUsers.splice( onlineUsers.indexOf(currentUser), 1 );
+
+        onlineUsers.splice(onlineUsers.indexOf(currentUser), 1);
         
         if (!gamers.includes(currentUser)) return;
-        gamers.splice( onlineUsers.indexOf(currentUser), 1 );
+        gamers.splice(onlineUsers.indexOf(currentUser), 1);
+        proxyActionHandler('disconnect', currentUser);
 
         if (gamers.length < 1) {
             isEndGame = true;
             return;
         }
 
-        deleteUserFromRating(currentUser, rating);
-        deleteUserFromRating(currentUser, ratingWinners);
+        rating = deleteUserFromRating(currentUser, rating);
+        ratingWinners = deleteUserFromRating(currentUser, ratingWinners);
 
-        updateRating(socket);
-        updateWinnersRating(socket);
+        updateCurrentRating(socket, rating);
+        updateWinnersRating(socket, ratingWinners);
 
         ratingDisconnected.push({ user: currentUser });
 
-        updateDisconnectedRating(socket);
+        updateDisconnectedRating(socket, ratingDisconnected);
     });
 });
