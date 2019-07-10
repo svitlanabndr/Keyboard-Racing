@@ -102,6 +102,8 @@ window.onload = () => {
                             console.log('win');
                             socket.emit('gameFinish');
                             keyboardHandler = () => {}; 
+                        } else if (maxScore - counter === 5) {
+                            socket.emit('beforeFinish');
                         } else {
                             document.querySelector(`#trace span:nth-of-type( ${counter+1} )`).classList.add('current');
                         }

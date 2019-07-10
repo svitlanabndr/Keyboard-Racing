@@ -12,6 +12,8 @@ class CommentsFactory {
                 return this.createWinnerMessage(context);
             case 'current':
                 return this.createCurrentMessage(context);
+            case 'beforeFinish':
+                return this.createBeforeFinishMessage(context);
             case 'finish':
                 return this.createFinishMessage(context);
             case 'joke':
@@ -49,10 +51,19 @@ class CommentsFactory {
         return currentMessage += `посмотрим, что будет дальше!`;
     }
 
+    static createBeforeFinishMessage(rating) {
+        let finishMessage = `Кажется, гонщику ${rating[0].user} осталось до финиша совсем немного. `;
+        rating.forEach((ratingItem, i) => {
+            if (i === 1) finishMessage += `Но обогнать его еще может ${ratingItem.user} `;
+            else if (i === 2) finishMessage += `или ${ratingItem.user}. `;
+        });
+        return finishMessage += 'А вот остальные игроки еще далеко от финиша. Но ситуация может измениться, давайте дождемся финиша!';
+    }
+
     static createFinishMessage(winRating) {
         let finishMessage = 'Гонка подошла к концу и финальный результат: ';
         winRating.forEach((ratingItem, i) => {
-            finishMessage += `${i+1}-ое место занимает ${ratingItem.user}. `;
+            finishMessage += `${i+1}-ое место занимает ${ratingItem.user} c результатом ${ratingItem.score} секунд. `;
         });
         return finishMessage += 'Остальные не успели дойти до финиша.';
     }

@@ -75,7 +75,6 @@ function actionHandler(type, context) {
             rating = createStartRating(gamers);
             invitedSockets.forEach(invitedSocket => {
                 invitedSocket.join('gameRoom');
-                console.log('i am in game room');
             });
             proxyActionHandler('hello');
             proxyActionHandler('start', rating)
@@ -115,7 +114,7 @@ function actionHandler(type, context) {
             break;
     }
 }
-const SPECIAL_ACTIONS = ['hello', 'start', 'disconnect', 'winner', 'current', 'finish', 'joke'];
+const SPECIAL_ACTIONS = ['hello', 'start', 'disconnect', 'winner', 'current', 'beforeFinish', 'finish', 'joke'];
 // Proxy
 const proxyActionHandler = new Proxy(actionHandler,  {
     apply(target, context, args) {
@@ -177,6 +176,10 @@ io.on('connection', socket => {
         if (ratingItem) ratingItem.score = currentScore;
         rating = sortRatingList(rating).reverse();
         updateCurrentRating(socket, rating)
+    });
+
+    socket.on('beforeFinish', () => {
+        proxyActionHandler('beforeFinish', rating);
     });
     
     socket.on('gameFinish', () => {
